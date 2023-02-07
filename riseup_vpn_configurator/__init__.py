@@ -214,7 +214,6 @@ remote-cert-tls server
 remote-cert-eku "TLS Web Server Authentication"
 
 # BEGIN EXCLUDE ROUTES
-route 1.2.3.4 255.255.255.255 net_gateway
 {{ excluded_routes }}
 # END EXCLUDE ROUTES
 
