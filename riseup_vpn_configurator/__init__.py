@@ -183,7 +183,7 @@ def get_server_info():
 
 
 def generate_configuration():
-    ovpn_template = """client
+    ovpn_template = """# reference manual: https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
 tls-client
 dev tun
 
@@ -191,25 +191,24 @@ dev tun
 remote {{ server_info['ip_address'] }} {{ server_info['port'] }} # {{ server_info['hostname'] }} in {{ server_info['location'] }}
 proto {{ server_info['proto'] }}
 verify-x509-name {{ server_info['hostname'].split(".")[0] }} name
-
-{{ dynamic_config }}
 # END DYNAMIC SERVER CONFIGURATION
 
-resolv-retry infinite
-nobind
-verb 3
+cipher AES-256-GCM
+tls-version-min 1.3
 persist-key
 persist-tun
-reneg-sec 0
+
+resolv-retry infinite
+keepalive 10 30
+nobind
+
 pull
-auth-nocache
+verb 3
 
 #script-security 2
 #up /etc/openvpn/update-resolv-conf
 #down /etc/openvpn/update-resolv-conf
 
-tls-version-min 1.2
-redirect-gateway ipv6
 remote-cert-tls server
 remote-cert-eku "TLS Web Server Authentication"
 
@@ -222,11 +221,11 @@ cert {{ cert_file }}
 key {{ key_file }}"""
 
     server_info = get_server_info()
-    dynamic_config = get_openvpn_dynamic_server_configuration()
+    # TODO: remove dynamic config
+    #dynamic_config = get_openvpn_dynamic_server_configuration()
     excluded_routes = get_excluded_routes()
     t = Template(ovpn_template)
     config = t.render(server_info=server_info,
-                      dynamic_config=dynamic_config,
                       excluded_routes=excluded_routes,
                       ca_cert_file=ca_cert_file,
                       cert_file=cert_file,
