@@ -165,16 +165,21 @@ def get_openvpn_dynamic_server_configuration():
 def get_server_info():
     with open(config_file) as f:
         y = yaml.safe_load(f)
-    #with open(gateway_json) as f:
-    #    j = json.load(f)
-    #gateways = j['gateways']
-    #gw = gateways[0]
-    return {
-        'hostname': y['server'],
-        'proto': y['protocol'],
-        'port': y['port'],
-        'location': 'Seatle TODO: this is hard coded'
-    }
+    with open(gateway_json) as f:
+        j = json.load(f)
+    gateways = j['gateways']
+    for gw in gateways:
+        if gw['host'] == y['server']:
+            # we could also check the port and protocol here
+            return {
+                'hostname': gw['host'],
+                'ip_address': gw['ip_address'],
+                'proto': y['protocol'],
+                'port': y['port'],
+                'location': gw['location'],
+            }
+    logging.error(f"Gateway '{y['server']}' not found in gateway list. Please check with --list")
+    sys.exit(1)
 
 
 def generate_configuration():
@@ -183,7 +188,7 @@ tls-client
 dev tun
 
 # BEGIN DYNAMIC SERVER CONFIGURATION
-remote {{ server_info['hostname'] }} {{ server_info['port'] }}
+remote {{ server_info['ip_address'] }} {{ server_info['port'] }} # {{ server_info['hostname'] }} in {{ server_info['location'] }}
 proto {{ server_info['proto'] }}
 verify-x509-name {{ server_info['hostname'].split(".")[0] }} name
 
