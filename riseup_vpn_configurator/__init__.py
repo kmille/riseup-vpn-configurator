@@ -21,18 +21,15 @@ from typing import Optional, NoReturn
 import logging
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
-
 logging.getLogger("urllib3").setLevel(logging.WARNING)
-
 
 working_dir = Path("/opt/riseup-vpn")
 api_ca_cert_file = working_dir / Path("api-ca.pem")
+gateway_json = working_dir / Path("gateways.json")
 
-ca_cert_file = working_dir / Path("ca.pem")
+ca_cert_file = working_dir / Path("vpn-ca.pem")
 cert_file = working_dir / Path("cert.pem")
 key_file = working_dir / Path("key.pem")
-
-gateway_json = working_dir / Path("gateways.json")
 
 config_file = Path("/etc/riseup-vpn.yaml")
 ovpn_file = Path("/etc/openvpn/client/riseup.conf")
@@ -46,60 +43,83 @@ VPN_USER = "openvpn"
 
 
 def cache_api_ca_cert() -> None:
-    logging.debug("Updating riseup.net ca certificate")
-    logging.debug(f"Fetching riseup.net vpn metadata from {PROVIDER_API_URL}")
-    resp = requests.get(PROVIDER_API_URL)
-    j = resp.json()
-    logging.debug(f"Fetching ca certificate from {j['ca_cert_uri']}")
+    logging.debug("Updating riseup.net API API CA certificate")
+    logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
+    try:
+        resp = requests.get(PROVIDER_API_URL)
+        j = resp.json()
+        assert "ca_cert_uri" in j.keys()
+    except Exception as e:
+        logging.error(e)
+        sys.exit(1)
+    logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
     resp = requests.get(j['ca_cert_uri'])
-    ca_cert_file.write_text(resp.text)
-    fix_file_permissions(ca_cert_file)
-    logging.debug(f"Sucessfully cached ca certificate to {ca_cert_file}")
+    api_ca_cert_file.write_text(resp.text)
+    fix_file_permissions(api_ca_cert_file)
+    logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
 
 
 def update_gateways() -> None:
     """
     curl https://api.black.riseup.net/1/configs/eip-service.json
     """
-    logging.info("Updating riseup.net gateway list")
+    logging.info("Updating VPN gateway list")
     cache_api_ca_cert()
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
-    resp = requests.get(GATEWAYS_API_URL, verify=str(ca_cert_file))
-    gateway_json.write_text(resp.text)
+    try:
+        resp = requests.get(GATEWAYS_API_URL, verify=str(api_ca_cert_file))
+        gateway_json.write_text(resp.text)
+    except Exception as e:
+        logging.error(e)
+        sys.exit(1)
     fix_file_permissions(gateway_json)
-    logging.info(f"Sucessfully saved riseup.net gateways to {gateway_json}")
+    logging.info(f"Sucessfully saved VPN gateway list to {gateway_json}")
 
 
-def update_ca_certificate() -> None:
+def update_vpn_ca_certificate() -> None:
     """
     curl https://black.riseup.net/ca.crt
     """
-    logging.info("Updating ca certificate")
-    resp = requests.get(VPN_CA_CERT_URL)
-    ca_cert_file.write_text(resp.text)
+    logging.info("Updating VPN CA certificate")
+    try:
+        resp = requests.get(VPN_CA_CERT_URL)
+        assert "-----BEGIN CERTIFICATE-----" in resp.text
+        assert "-----END CERTIFICATE-----" in resp.text
+        ca_cert_file.write_text(resp.text)
+    except Exception as e:
+        logging.error(e)
+        sys.exit(1)
     fix_file_permissions(ca_cert_file)
-    logging.debug(f"Sucessfully saved ca certificate to {ca_cert_file}")
+    logging.info(f"Sucessfully saved VPN CA certificate to {ca_cert_file}")
 
 
-def update_client_credentials() -> None:
+def update_vpn_client_credentials() -> None:
     """
     curl https://black.riseup.net/ca.crt > ca.crt
     curl https://api.black.riseup.net/1/cert --cacert ca.crt
     """
-    logging.debug("Updating client certificate/key")
-    resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=str(ca_cert_file))
-    SEPERATOR = "-----BEGIN CERTIFICATE-----"
-    parts = resp.text.split(SEPERATOR)
-    key = parts[0].strip()
+    logging.info("Updating client certificate/key")
+    try:
+        resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=str(api_ca_cert_file))
+        SEPERATOR = "-----BEGIN CERTIFICATE-----"
+        parts = resp.text.split(SEPERATOR)
+        key = parts[0].strip()
+        assert "-----BEGIN RSA PRIVATE KEY-----" in key
+        assert "-----END RSA PRIVATE KEY-----" in key
 
-    key_file.write_text(key)
-    fix_file_permissions(key_file)
-    logging.info(f"Sucessfully saved client key to {key_file}")
+        key_file.write_text(key)
+        fix_file_permissions(key_file)
+        logging.info(f"Sucessfully saved VPN client key to {key_file}")
 
-    cert = f"{SEPERATOR}{parts[1]}".strip()
-    cert_file.write_text(cert)
-    fix_file_permissions(cert_file)
-    logging.info(f"Sucessfully saved client certificate to {cert_file}")
+        cert = f"{SEPERATOR}{parts[1]}".strip()
+        assert "-----BEGIN CERTIFICATE-----" in cert
+        assert "-----END CERTIFICATE-----" in cert
+        cert_file.write_text(cert)
+        fix_file_permissions(cert_file)
+        logging.info(f"Sucessfully saved VPN client certificate to {cert_file}")
+    except Exception as e:
+        logging.error(e)
+        sys.exit(1)
 
 
 def list_gateways() -> None:
@@ -137,16 +157,20 @@ def check_config_file() -> None:
 
     with open(config_file) as f:
         y = yaml.safe_load(f)
+    if not y or type(y) != dict:
+        logging.error(f"Could not parse config file {config_file}")
+        sys.exit(1)
 
-    for c in ("gateway_method", "server", "location", "protocol", "port", "excluded_routes"):
+    #for c in ("gateway_method", "server", "location", "protocol", "port", "excluded_routes"):
+    for c in ("server", "protocol", "port", "excluded_routes"):
         if c not in y.keys():
             logging.error(f"Error checking configuration file ({config_file}): '{c}' not specified")
             sys.exit(1)
 
-    if y["gateway_method"] not in ("server", "location", "random"):
-        logging.error(f"Error checking configuration file ({config_file}): 'gateway_configuration' must be one of the values server|location|random (specified was '{y['gateway_method']}')")
-        sys.exit(1)
-
+#    if y["gateway_method"] not in ("server", "location", "random"):
+#        logging.error(f"Error checking configuration file ({config_file}): 'gateway_configuration' must be one of the values server|location|random (specified was '{y['gateway_method']}')")
+#        sys.exit(1)
+#
     if y["protocol"] not in ("tcp", "udp"):
         logging.error(f"Error checking configuration file ({config_file}): 'protocol' must be one of the values tcp|udp (specified was '{y['protocol']}')")
         sys.exit(1)
@@ -165,21 +189,20 @@ def check_config_file() -> None:
 
 def get_server_info() -> Optional[dict]:
     with open(config_file) as f:
-        y = yaml.safe_load(f)
+        config = yaml.safe_load(f)
     with open(gateway_json) as f:
         j = json.load(f)
     gateways = j['gateways']
     for gw in gateways:
-        if gw['host'] == y['server']:
-            # we could also check the port and protocol here
+        if gw['host'] == config['server']:
             return {
                 'hostname': gw['host'],
                 'ip_address': gw['ip_address'],
-                'proto': y['protocol'],
-                'port': y['port'],
+                'proto': config['protocol'],
+                'port': config['port'],
                 'location': gw['location'],
             }
-    logging.error(f"Gateway '{y['server']}' not found in gateway list. Please check with --list")
+    logging.error(f"Gateway '{config['server']}' not found in gateway list. Please check with --list")
     sys.exit(1)
 
 
@@ -335,7 +358,12 @@ def fix_file_permissions(file: Path) -> None:
     file.chmod(0o600)
 
 
-def check_directories() -> None:
+def sanity_checks() -> None:
+    def print_default_config() -> None:
+        logging.error(f"You can redirect this output to {config_file}")
+        config_template = Path(__file__).parents[1] / config_file.name
+        print(config_template.read_text())
+        sys.exit(1)
 
     if not working_dir.exists():
         working_dir.mkdir(0o700)
@@ -346,10 +374,17 @@ def check_directories() -> None:
 
     if not config_file.exists():
         logging.error(f"Could not find config file {config_file}")
-        logging.error(f"You can redirect this output to {config_file}")
-        config_template = Path(__file__).parents[1] / config_file.name
-        print(config_template.read_text())
-        sys.exit(1)
+        print_default_config()
+    else:
+        with open(config_file) as f:
+            try:
+                y = yaml.safe_load(f)
+            except yaml.scanner.ScannerError as e:
+                logging.error(f"Could not parse yaml file: {e}")
+                sys.exit(1)
+        if not y or type(y) != dict:
+            logging.error(f"Could not parse config file {config_file}")
+            print_default_config()
 
 
 def uninstall() -> NoReturn:
@@ -360,7 +395,7 @@ def uninstall() -> NoReturn:
                 logging.info(f"Deleted file {file}")
             else:
                 shutil.rmtree(file)
-                logging.info(f"Deleted  directory {file}")
+                logging.info(f"Deleted directory {file}")
         except FileNotFoundError:
             pass
 
@@ -377,8 +412,8 @@ def main() -> None:
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
     parser.add_argument("--uninstall", action="store_true", help="remove all files")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
-    parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}")
-    parser.add_argument("-g", "--generate-config", action="store_true")
+    parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
+    parser.add_argument("-g", "--generate-config", action="store_true", help=f"Generate openvpn config ({ovpn_file})")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
 
     args = parser.parse_args()
@@ -391,14 +426,14 @@ def main() -> None:
     if args.uninstall:
         uninstall()
 
-    check_directories()
+    sanity_checks()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     if args.update:
         update_gateways()
-        update_ca_certificate()
-        update_client_credentials()
+        update_vpn_ca_certificate()
+        update_vpn_client_credentials()
     elif args.list_gateways:
         list_gateways()
     elif args.generate_config:
