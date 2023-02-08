@@ -13,9 +13,10 @@ from ipaddress import ip_network
 from pyasn1_modules import pem, rfc2459
 from pyasn1.codec.der import decoder
 import psutil
+import shutil
 #from subprocess import Popen, PIPE
 
-from typing import Optional
+from typing import Optional, NoReturn
 
 import logging
 FORMAT = "%(levelname)s: %(message)s"
@@ -162,19 +163,6 @@ def check_config_file() -> None:
     logging.info("Configuration file: OK")
 
 
-def get_openvpn_dynamic_server_configuration() -> str:
-    with open(gateway_json) as f:
-        j = json.load(f)
-    out = ""
-    for key, value in j['openvpn_configuration'].items():
-        # https://community.openvpn.net/openvpn/wiki/DeprecatedOptions#Option:--tun-ipv6Status:Ignoredpendingremoval
-        if key == "tun-ipv6":
-            continue
-        out += f"{key} {value}\n"
-    out = (out.strip())
-    return out
-
-
 def get_server_info() -> Optional[dict]:
     with open(config_file) as f:
         y = yaml.safe_load(f)
@@ -244,8 +232,6 @@ cert {{ cert_file }}
 key {{ key_file }}"""
 
     server_info = get_server_info()
-    # TODO: remove dynamic config
-    #dynamic_config = get_openvpn_dynamic_server_configuration()
     excluded_routes = get_excluded_routes()
     t = Template(ovpn_template)
     config = t.render(server_info=server_info,
@@ -360,8 +346,28 @@ def check_directories() -> None:
 
     if not config_file.exists():
         logging.error(f"Could not find config file {config_file}")
-        logging.error("TODO: print default config")
+        logging.error(f"You can redirect this output to {config_file}")
+        config_template = Path(__file__).parents[1] / config_file.name
+        print(config_template.read_text())
         sys.exit(1)
+
+
+def uninstall() -> NoReturn:
+    def delete(file: Path) -> None:
+        try:
+            if file.resolve().is_file():
+                file.unlink()
+                logging.info(f"Deleted file {file}")
+            else:
+                shutil.rmtree(file)
+                logging.info(f"Deleted  directory {file}")
+        except FileNotFoundError:
+            pass
+
+    delete(working_dir)
+    delete(config_file)
+    delete(ovpn_file)
+    sys.exit(0)
 
 
 def main() -> None:
@@ -369,6 +375,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output")
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
+    parser.add_argument("--uninstall", action="store_true", help="remove all files")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}")
     parser.add_argument("-g", "--generate-config", action="store_true")
@@ -380,6 +387,10 @@ def main() -> None:
         sys.exit(1)
 
     check_root_permissions()
+
+    if args.uninstall:
+        uninstall()
+
     check_directories()
 
     if args.verbose:
