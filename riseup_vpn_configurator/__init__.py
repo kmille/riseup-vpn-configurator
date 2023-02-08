@@ -4,6 +4,8 @@ import os
 import argparse
 import json
 import yaml
+import pwd
+import grp
 from jinja2 import Template
 from pathlib import Path
 import requests
@@ -12,6 +14,8 @@ from pyasn1_modules import pem, rfc2459
 from pyasn1.codec.der import decoder
 import psutil
 #from subprocess import Popen, PIPE
+
+from typing import Optional
 
 import logging
 FORMAT = "%(levelname)s: %(message)s"
@@ -37,8 +41,10 @@ PROVIDER_API_URL = "https://riseup.net/provider.json"
 VPN_CA_CERT_URL = "https://black.riseup.net/ca.crt"
 VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
+VPN_USER = "openvpn"
 
-def cache_api_ca_cert():
+
+def cache_api_ca_cert() -> None:
     logging.debug("Updating riseup.net ca certificate")
     logging.debug(f"Fetching riseup.net vpn metadata from {PROVIDER_API_URL}")
     resp = requests.get(PROVIDER_API_URL)
@@ -46,10 +52,11 @@ def cache_api_ca_cert():
     logging.debug(f"Fetching ca certificate from {j['ca_cert_uri']}")
     resp = requests.get(j['ca_cert_uri'])
     ca_cert_file.write_text(resp.text)
+    fix_file_permissions(ca_cert_file)
     logging.debug(f"Sucessfully cached ca certificate to {ca_cert_file}")
 
 
-def update_gateways():
+def update_gateways() -> None:
     """
     curl https://api.black.riseup.net/1/configs/eip-service.json
     """
@@ -58,20 +65,22 @@ def update_gateways():
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
     resp = requests.get(GATEWAYS_API_URL, verify=str(ca_cert_file))
     gateway_json.write_text(resp.text)
+    fix_file_permissions(gateway_json)
     logging.info(f"Sucessfully saved riseup.net gateways to {gateway_json}")
 
 
-def update_ca_certificate():
+def update_ca_certificate() -> None:
     """
     curl https://black.riseup.net/ca.crt
     """
     logging.info("Updating ca certificate")
     resp = requests.get(VPN_CA_CERT_URL)
     ca_cert_file.write_text(resp.text)
+    fix_file_permissions(ca_cert_file)
     logging.debug(f"Sucessfully saved ca certificate to {ca_cert_file}")
 
 
-def update_client_credentials():
+def update_client_credentials() -> None:
     """
     curl https://black.riseup.net/ca.crt > ca.crt
     curl https://api.black.riseup.net/1/cert --cacert ca.crt
@@ -81,22 +90,25 @@ def update_client_credentials():
     SEPERATOR = "-----BEGIN CERTIFICATE-----"
     parts = resp.text.split(SEPERATOR)
     key = parts[0].strip()
+
     key_file.write_text(key)
-    cert = f"{SEPERATOR}{parts[1]}".strip()
-    cert_file.write_text(cert)
-    logging.info(f"Sucessfully saved client certificate to {cert_file}")
-    key_file.write_text(key)
+    fix_file_permissions(key_file)
     logging.info(f"Sucessfully saved client key to {key_file}")
 
+    cert = f"{SEPERATOR}{parts[1]}".strip()
+    cert_file.write_text(cert)
+    fix_file_permissions(cert_file)
+    logging.info(f"Sucessfully saved client certificate to {cert_file}")
 
-def list_gateways():
-    print("TODO: fix view SORT")
+
+def list_gateways() -> None:
     with open(gateway_json) as f:
         j = json.load(f)
     gateways = j['gateways']
+    gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
     out = ""
     for gw in gateways:
-        out += f"{gw['host']} {gw['location']} {gw['ip_address']} ("
+        out += f"{gw['host']} {gw['location']:<13} {gw['ip_address']:<15} ("
         for transport in gw['capabilities']['transport']:
             if transport['type'] == "openvpn":
                 protocols = ",".join(transport['protocols'])
@@ -105,7 +117,7 @@ def list_gateways():
     print(out.strip())
 
 
-def get_excluded_routes():
+def get_excluded_routes() -> str:
     with open(config_file) as f:
         y = yaml.safe_load(f)
     out = ""
@@ -119,8 +131,9 @@ def get_excluded_routes():
     return out.strip()
 
 
-def check_config_file():
+def check_config_file() -> None:
     logging.debug(f"Checking configuration file {config_file}")
+
     with open(config_file) as f:
         y = yaml.safe_load(f)
 
@@ -149,7 +162,7 @@ def check_config_file():
     logging.info("Configuration file: OK")
 
 
-def get_openvpn_dynamic_server_configuration():
+def get_openvpn_dynamic_server_configuration() -> str:
     with open(gateway_json) as f:
         j = json.load(f)
     out = ""
@@ -162,7 +175,7 @@ def get_openvpn_dynamic_server_configuration():
     return out
 
 
-def get_server_info():
+def get_server_info() -> Optional[dict]:
     with open(config_file) as f:
         y = yaml.safe_load(f)
     with open(gateway_json) as f:
@@ -182,7 +195,17 @@ def get_server_info():
     sys.exit(1)
 
 
-def generate_configuration():
+def check_file_exists(file: Path) -> None:
+    if not file.exists():
+        logging.error(f"File ({file}) not found. You can get it by using --update")
+        sys.exit(1)
+
+
+def generate_configuration() -> None:
+    check_file_exists(ca_cert_file)
+    check_file_exists(cert_file)
+    check_file_exists(key_file)
+
     ovpn_template = """# reference manual: https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
 tls-client
 dev tun
@@ -231,10 +254,11 @@ key {{ key_file }}"""
                       cert_file=cert_file,
                       key_file=key_file)
     ovpn_file.write_text(config)
+    fix_file_permissions(ovpn_file)
     logging.info(f"Sucessfully saved riseup.vpn configuration file to {ovpn_file}")
 
 
-def show_status():
+def show_status() -> None:
     check_config_file()
 
     if ca_cert_file.exists():
@@ -262,6 +286,11 @@ def show_status():
     else:
         logging.error("VPN gateway not found. You can get it with --update")
 
+    if ovpn_file.exists():
+        logging.info(f"VPN configuration ({ovpn_file}): OK")
+    else:
+        logging.error(f"VPN configuration ({ovpn_file}) not found. You can get it with --generate-config")
+
     openvpn_found = False
     for proc in psutil.process_iter():
         if "openvpn" in proc.name():
@@ -270,13 +299,24 @@ def show_status():
     if not openvpn_found:
         logging.warning("No running openvpn process found")
 
-    resp = requests.get("https://api4.ipify.org?format=json")
-    logging.info(f"Your IPv4 address: {resp.json()['ip']}")
+    try:
+        resp = requests.get("https://api4.ipify.org?format=json", timeout=5)
+        logging.info(f"Your IPv4 address: {resp.json()['ip']}")
+    except Exception as e:
+        logging.error(f"Error finding your public IPv4 address: {e}")
+
     #resp = requests.get("https://api6.ipify.org?format=json")
     #logging.info(f"Your IPv6 address: {resp.json()['ip']}")
 
+    logging.debug("Start/Stop Riseup-VPN")
+    logging.debug("systemctl start openvpn-client@riseup")
+    logging.debug("systemctl stop openvpn-client@riseup")
+    logging.debug("Autostart Riseup-VPN")
+    logging.debug("systemctl enable openvpn-client@riseup")
+    logging.debug("systemctl disable openvpn-client@riseup")
 
-def check_root_permissions():
+
+def check_root_permissions() -> None:
     if os.getuid() != 0:
         logging.error("This scripts needs to be executed with root permission.")
         sys.exit(1)
@@ -301,33 +341,38 @@ def check_root_permissions():
 #    #execute(["systemctl", "stop", f"openvpn-client@{config}.service"])
 #    #execute(["systemctl", "disable", f"openvpn-client@{config}.service"])
 
-def check_directories():
-    import pwd
-    import grp
+
+def fix_file_permissions(file: Path) -> None:
+    uid = pwd.getpwnam(VPN_USER).pw_uid
+    gid = grp.getgrnam(VPN_USER).gr_gid
+    os.chown(file, uid, gid)
+    file.chmod(0o600)
+
+
+def check_directories() -> None:
 
     if not working_dir.exists():
         working_dir.mkdir(0o700)
 
-    uid = pwd.getpwnam("openvpn").pw_uid
-    gid = grp.getgrnam("openvpn").gr_gid
+    uid = pwd.getpwnam(VPN_USER).pw_uid
+    gid = grp.getgrnam(VPN_USER).gr_gid
     os.chown(working_dir, uid, gid)
 
     if not config_file.exists():
         logging.error(f"Could not find config file {config_file}")
+        logging.error("TODO: print default config")
         sys.exit(1)
 
 
-def main():
+def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output")
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
-    parser.add_argument("-c", "--check-configuration", action="store_true", help=f"check syntax of {config_file}")
-    parser.add_argument("-g", "--generate-configuration", action="store_true")
+    parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}")
+    parser.add_argument("-g", "--generate-config", action="store_true")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
-    #parser.add_argument("-e", "--enable", action="store_true", help="Start and enable riseup-vpn")
-    #parser.add_argument("-d", "--disable", action="store_true", help="Stop and disable riseup-vpn")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -345,10 +390,10 @@ def main():
         update_client_credentials()
     elif args.list_gateways:
         list_gateways()
-    elif args.generate_configuration:
+    elif args.generate_config:
         check_config_file()
         generate_configuration()
-    elif args.check_configuration:
+    elif args.check_config:
         check_config_file()
     elif args.status:
         show_status()
