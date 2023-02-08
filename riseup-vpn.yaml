@@ -1,0 +1,15 @@
+---
+# gateway_method: (server|location|random)
+# server: use the gateway specified by server
+# location: use a random server of specified location
+# random: use a random server
+gateway_method: server
+
+server: vpn07-par.riseup.net
+location: Paris
+protocol: udp
+port: 53
+
+excluded_routes:
+  - 1.1.1.1/24
+  - 8.8.8.8
