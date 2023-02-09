@@ -14,6 +14,7 @@ pyyaml = "^6.0"
 pyasn1 = "^0.4.8"
 pyasn1-modules = "^0.2.8"
 psutil = "^5.9.4"
+ping3 = "^4.0.4"
 
 
 [tool.poetry.group.dev.dependencies]

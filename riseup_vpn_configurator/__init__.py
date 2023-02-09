@@ -17,6 +17,8 @@ import shutil
 #from subprocess import Popen, PIPE
 
 from typing import Optional, NoReturn
+import ping3
+ping3.EXCEPTIONS = True
 
 import logging
 FORMAT = "%(levelname)s: %(message)s"
@@ -122,19 +124,40 @@ def update_vpn_client_credentials() -> None:
         sys.exit(1)
 
 
-def list_gateways() -> None:
+def calc_latency(ip: str) -> str:
+    latency = 0.0
+    iterations = 4
+    for i in range(iterations):
+        try:
+            lat = ping3.ping(ip, timeout=5)
+            latency += lat
+        except ping3.errors.PingError as e:
+            logging.warning(f"Error ping {ip}: {e}")
+    latency_avg = latency/float(iterations)
+    return latency_avg
+
+
+def list_gateways(bench: bool) -> None:
     with open(gateway_json) as f:
         j = json.load(f)
-    gateways = j['gateways']
-    gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
+    if bench:
+        logging.info("Listing VPN gateways with latency. Plase turn off the VPN before.")
+        for gw in j['gateways']:
+            gw['latency'] = calc_latency(gw['ip_address'])
+        gateways = sorted(j['gateways'], key=lambda gw: gw['latency'])
+    else:
+        gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
+
     out = ""
     for gw in gateways:
-        out += f"{gw['host']} {gw['location']:<13} {gw['ip_address']:<15} ("
+        latency_formatted = str(round(gw['latency'] * 1000, 2)) + " ms "
+        out += f"{gw['host']} {gw['location']:<13} {gw['ip_address']:<15} "
+        out += f"latency={latency_formatted:<11}"
         for transport in gw['capabilities']['transport']:
             if transport['type'] == "openvpn":
                 protocols = ",".join(transport['protocols'])
                 ports = ",".join(transport['ports'])
-                out += f"protocols={protocols} ports={ports})\n"
+                out += f"protocols={protocols:<7} ports={ports}\n"
     print(out.strip())
 
 
@@ -412,6 +435,7 @@ def main() -> None:
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
     parser.add_argument("--uninstall", action="store_true", help="remove all files")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
+    parser.add_argument("-b", "--benchmark", action="store_true", help="use with --list - pings the gateway and shows the latency")
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
     parser.add_argument("-g", "--generate-config", action="store_true", help=f"Generate openvpn config ({ovpn_file})")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
@@ -435,7 +459,7 @@ def main() -> None:
         update_vpn_ca_certificate()
         update_vpn_client_credentials()
     elif args.list_gateways:
-        list_gateways()
+        list_gateways(args.benchmark)
     elif args.generate_config:
         check_config_file()
         generate_configuration()

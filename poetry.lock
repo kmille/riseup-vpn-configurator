@@ -238,6 +238,21 @@ funcsigs = ["funcsigs"]
 testing = ["funcsigs", "pytest"]
 
 [[package]]
+name = "ping3"
+version = "4.0.4"
+description = "A pure python3 version of ICMP ping implementation using raw socket."
+category = "main"
+optional = false
+python-versions = ">=3"
+files = [
+    {file = "ping3-4.0.4-py3-none-any.whl", hash = "sha256:dd8439ced69d6fec5885c8d4faefb055aacffb5a20f5e38a78459a5b18cc5e5a"},
+    {file = "ping3-4.0.4.tar.gz", hash = "sha256:1ea12acf6752d4666616341fd7c6393c664cffc510c693ef06f736fb267a13ba"},
+]
+
+[package.extras]
+dev = ["build", "pycodestyle", "wheel"]
+
+[[package]]
 name = "psutil"
 version = "5.9.4"
 description = "Cross-platform lib for process and system monitoring in Python."
@@ -431,4 +446,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "793013c0cbf7aa52477b8564b15c5d22a993e1ca81154bdd7815c6b153be8f17"
+content-hash = "d66e94aef9d7013f19b6ddbceaa6fd70c16dc28d67549b7b4b0e99baffe6ad57"
