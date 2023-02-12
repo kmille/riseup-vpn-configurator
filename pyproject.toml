@@ -19,7 +19,11 @@ ping3 = "^4.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pdbpp = "^0.10.3"
+pytest = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+ignore_missing_imports = true
