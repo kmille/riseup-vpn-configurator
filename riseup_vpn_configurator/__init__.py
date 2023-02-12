@@ -14,7 +14,6 @@ from pyasn1_modules import pem, rfc2459
 from pyasn1.codec.der import decoder
 import psutil
 import shutil
-#from subprocess import Popen, PIPE
 
 from typing import Optional, NoReturn
 import ping3
@@ -124,7 +123,7 @@ def update_vpn_client_credentials() -> None:
         sys.exit(1)
 
 
-def calc_latency(ip: str) -> str:
+def calc_latency(ip: str) -> float:
     latency = 0.0
     iterations = 4
     for i in range(iterations):
@@ -150,9 +149,10 @@ def list_gateways(bench: bool) -> None:
 
     out = ""
     for gw in gateways:
-        latency_formatted = str(round(gw['latency'] * 1000, 2)) + " ms "
-        out += f"{gw['host']} {gw['location']:<13} {gw['ip_address']:<15} "
-        out += f"latency={latency_formatted:<11}"
+        out += f"{gw['host']} location={gw['location']:<13} ip={gw['ip_address']:<15} "
+        if bench:
+            latency_formatted = str(round(gw['latency'] * 1000, 2)) + " ms "
+            out += f"latency={latency_formatted:<11}"
         for transport in gw['capabilities']['transport']:
             if transport['type'] == "openvpn":
                 protocols = ",".join(transport['protocols'])
@@ -190,10 +190,6 @@ def check_config_file() -> None:
             logging.error(f"Error checking configuration file ({config_file}): '{c}' not specified")
             sys.exit(1)
 
-#    if y["gateway_method"] not in ("server", "location", "random"):
-#        logging.error(f"Error checking configuration file ({config_file}): 'gateway_configuration' must be one of the values server|location|random (specified was '{y['gateway_method']}')")
-#        sys.exit(1)
-#
     if y["protocol"] not in ("tcp", "udp"):
         logging.error(f"Error checking configuration file ({config_file}): 'protocol' must be one of the values tcp|udp (specified was '{y['protocol']}')")
         sys.exit(1)
@@ -241,25 +237,19 @@ def generate_configuration() -> None:
     check_file_exists(key_file)
 
     ovpn_template = """# reference manual: https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
-tls-client
+client
 dev tun
 
-# BEGIN DYNAMIC SERVER CONFIGURATION
 remote {{ server_info['ip_address'] }} {{ server_info['port'] }} # {{ server_info['hostname'] }} in {{ server_info['location'] }}
 proto {{ server_info['proto'] }}
 verify-x509-name {{ server_info['hostname'].split(".")[0] }} name
-# END DYNAMIC SERVER CONFIGURATION
 
 cipher AES-256-GCM
 tls-version-min 1.3
-persist-key
-persist-tun
 
 resolv-retry infinite
-keepalive 10 30
+keepalive 10 60
 nobind
-
-pull
 verb 3
 
 #script-security 2
@@ -354,29 +344,13 @@ def check_root_permissions() -> None:
         sys.exit(1)
 
 
-#def enable_riseup_vpn():
-#    check_config_file()
-#    with open(config_file) as f:
-#        y = yaml.safe_load(f)
-#    config = Path(y['config_location']).stem
-#
-#    def execute(x):
-#        logging.debug(f"Executing: '{' '.join(x)}'")
-#        p = Popen(x, stdout=PIPE, stderr=PIPE)
-#        p.wait()
-#        stdout, stderr = p.communicate()
-#        if p.returncode != 0:
-#            logging.error(f"{stderr.decode()}")
-#
-#    #execute(["systemctl", "enable", f"openvpn-client@{config}.service"])
-#    #execute(["systemctl", "start", f"openvpn-client@{config}.service"])
-#    #execute(["systemctl", "stop", f"openvpn-client@{config}.service"])
-#    #execute(["systemctl", "disable", f"openvpn-client@{config}.service"])
-
-
 def fix_file_permissions(file: Path) -> None:
-    uid = pwd.getpwnam(VPN_USER).pw_uid
-    gid = grp.getgrnam(VPN_USER).gr_gid
+    try:
+        uid = pwd.getpwnam(VPN_USER).pw_uid
+        gid = grp.getgrnam(VPN_USER).gr_gid
+    except KeyError as e:
+        logging.error(f"Could not find user/group: {e}")
+        sys.exit(1)
     os.chown(file, uid, gid)
     file.chmod(0o600)
 
@@ -391,8 +365,12 @@ def sanity_checks() -> None:
     if not working_dir.exists():
         working_dir.mkdir(0o700)
 
-    uid = pwd.getpwnam(VPN_USER).pw_uid
-    gid = grp.getgrnam(VPN_USER).gr_gid
+    try:
+        uid = pwd.getpwnam(VPN_USER).pw_uid
+        gid = grp.getgrnam(VPN_USER).gr_gid
+    except KeyError as e:
+        logging.error(f"Could not find user/group: {e}")
+        sys.exit(1)
     os.chown(working_dir, uid, gid)
 
     if not config_file.exists():
@@ -467,8 +445,6 @@ def main() -> None:
         check_config_file()
     elif args.status:
         show_status()
-    #elif args.enable:
-    #    enable_riseup_vpn()
 
 
 if __name__ == '__main__':
