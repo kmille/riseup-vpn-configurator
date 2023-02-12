@@ -42,7 +42,6 @@ VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
 VPN_USER = "openvpn"
 
-
 def cache_api_ca_cert() -> None:
     logging.debug("Updating riseup.net API API CA certificate")
     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
@@ -406,6 +405,13 @@ def uninstall() -> NoReturn:
     sys.exit(0)
 
 
+def show_version():
+    from importlib.metadata import version
+    app_name = "riseup-vpn-configurator"
+    logging.info(f"Running {app_name} v{version(app_name)}")
+    sys.exit()
+
+
 def main() -> None:
 
     parser = argparse.ArgumentParser()
@@ -417,6 +423,7 @@ def main() -> None:
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
     parser.add_argument("-g", "--generate-config", action="store_true", help=f"Generate openvpn config ({ovpn_file})")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
+    parser.add_argument("--version", action="store_true", help="show version")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -427,6 +434,8 @@ def main() -> None:
 
     if args.uninstall:
         uninstall()
+    elif args.version:
+        show_version()
 
     sanity_checks()
 
