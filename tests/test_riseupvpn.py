@@ -124,20 +124,23 @@ class TestRiseupVPN:
         assert "vpn01-sea.riseup.net location=Seattle       ip=204.13.164.252  latency=" in captured.out
         assert "ms  protocols=tcp,udp ports=53,80,1194" in captured.out
 
-    def test_generate_configurator_config(self):
-        from riseup_vpn_configurator import sanity_checks
+    def test_generate_configurator_config(self, capsys):
+        from riseup_vpn_configurator import print_default_config
+        import yaml
         with pytest.raises(SystemExit) as se:
-            # sanity_checks() fails because it does not find our config file
-            sanity_checks()
-            assert se.value.code == 1
+            print_default_config(0)
+            assert se.value.code == 0
+        captured = capsys.readouterr()
+        config = yaml.safe_load(captured.out)
+        assert list(config.keys()) == ['server', 'protocol', 'port', 'excluded_routes']
 
     def test_generate_vpn_configuration(self, capsys, caplog):
-        from riseup_vpn_configurator import generate_configuration, update_gateways, update_vpn_client_credentials, update_vpn_ca_certificate, sanity_checks
+        from riseup_vpn_configurator import generate_configuration, update_gateways, update_vpn_client_credentials, update_vpn_ca_certificate, print_default_config
 
         # BEGIN GENERATE CONFIG
-        with pytest.raises(SystemExit):
-            # sanity_checks() fails because it does not find our config file
-            sanity_checks()
+        with pytest.raises(SystemExit) as se:
+            print_default_config(0)
+            assert se.value.code == 0
         captured = capsys.readouterr()
         riseup_vpn_configurator.config_file.write_text(captured.out)
         # END GENERATE CONFIG
@@ -150,5 +153,6 @@ class TestRiseupVPN:
         assert "Sucessfully saved riseup.vpn " in caplog.text
 
         vpn_config = riseup_vpn_configurator.ovpn_file.read_text()
-        assert "route 1.1.1.0 255.255.255.0 net_gateway" in vpn_config
+        assert "route 1.1.1.1 255.255.255.255 net_gateway" in vpn_config
+        assert "route 192.168.123.0 255.255.255.0 net_gateway" in vpn_config
         assert "proto udp" in vpn_config
