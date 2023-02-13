@@ -25,6 +25,7 @@ ping3 = "^4.0.4"
 pdbpp = "^0.10.3"
 pytest = "^7.2.1"
 coverage = "^7.1.0"
+flake8 = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
