@@ -19,7 +19,7 @@ jobs:
           poetry install
       - name: Lint with flake8
         run: |
-          flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+          poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
       - name: Test with pytest
         run: |
           poetry run pytest -v -s tests
