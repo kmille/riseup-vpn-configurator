@@ -34,5 +34,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 riseup-vpn-configurator = 'riseup_vpn_configurator.__init__:main'
 
+[tool.setuptools.package-data]
+riseup_vpn_configurator = ["riseup_vpn_configurator/riseup-vpn.yaml"]
+
 [tool.mypy]
 ignore_missing_imports = true

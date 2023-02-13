@@ -286,15 +286,15 @@ def show_status() -> None:
     if ca_cert_file.exists():
         logging.info("CA certificate: OK")
     else:
-        logging.error("CA certificate not found. You can get it with --update")
+        logging.warning("CA certificate not found. You can get it with --update")
 
     if key_file.exists():
         logging.info("Client key: OK")
     else:
-        logging.error("Client key not found. You can get it with --update")
+        logging.warning("Client key not found. You can get it with --update")
 
     if not cert_file.exists():
-        logging.error("Client certificate not found. You can get it with --update")
+        logging.warning("Client certificate not found. You can get it with --update")
     else:
         with open(cert_file) as f:
             substrate = pem.readPemFromFile(f)
@@ -306,12 +306,12 @@ def show_status() -> None:
     if gateway_json.exists():
         logging.info("VPN gateway list: OK")
     else:
-        logging.error("VPN gateway not found. You can get it with --update")
+        logging.warning("VPN gateway not found. You can get it with --update")
 
     if ovpn_file.exists():
         logging.info(f"VPN configuration ({ovpn_file}): OK")
     else:
-        logging.error(f"VPN configuration ({ovpn_file}) not found. You can get it with --generate-config")
+        logging.warning(f"VPN configuration ({ovpn_file}) not found. You can get it with --generate-config")
 
     openvpn_found = False
     for proc in psutil.process_iter():
@@ -325,7 +325,7 @@ def show_status() -> None:
         resp = requests.get("https://api4.ipify.org?format=json", timeout=5)
         logging.info(f"Your IPv4 address: {resp.json()['ip']}")
     except Exception as e:
-        logging.error(f"Error finding your public IPv4 address: {e}")
+        logging.warning(f"Error finding your public IPv4 address: {e}")
 
     logging.debug("Start/Stop Riseup-VPN")
     logging.debug("systemctl start openvpn-client@riseup")
@@ -353,7 +353,7 @@ def fix_file_permissions(file: Path) -> None:
 
 
 def print_default_config(return_code: int) -> NoReturn:
-    config_template = Path(__file__).parents[1] / config_file.name
+    config_template = Path(__file__).parents[0] / config_file.name
     print(config_template.read_text())
     sys.exit(return_code)
 

@@ -8,18 +8,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        #python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
       - name: Install dependencies
+        # we need to run everything as root because we make chown and need root for it ...
         run: |
-          poetry install
+          sudo useradd openvpn
+          # poetry 1.1.12 is too old (with --group dev instead of --dev), so wie use pip to install it
+          sudo pip install poetry
+          poetry --version
+          sudo poetry install
       - name: Lint with flake8
         run: |
-          poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+          sudo poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
       - name: Test with pytest
         run: |
-          poetry run pytest -v -s tests
+          sudo poetry run pytest -v -s tests
