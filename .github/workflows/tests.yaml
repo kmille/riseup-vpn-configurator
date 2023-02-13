@@ -26,6 +26,9 @@ jobs:
       - name: Lint with flake8
         run: |
           sudo poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+      - name: Type check with mypy
+        run: |
+          sudo poetry run mypy riseup_vpn_configurator
       - name: Test with pytest
         run: |
           sudo poetry run pytest -v -s tests
