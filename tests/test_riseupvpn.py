@@ -150,7 +150,7 @@ class TestRiseupVPN:
         update_vpn_ca_certificate()
         caplog.set_level(logging.INFO)
         generate_configuration()
-        assert "Sucessfully saved riseup.vpn " in caplog.text
+        assert "Sucessfully saved RiseupVPN configuration" in caplog.text
 
         vpn_config = riseup_vpn_configurator.ovpn_file.read_text()
         assert "route 1.1.1.1 255.255.255.255 net_gateway" in vpn_config

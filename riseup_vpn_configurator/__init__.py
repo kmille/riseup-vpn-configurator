@@ -279,7 +279,7 @@ key {{ key_file }}"""
                       key_file=key_file)
     ovpn_file.write_text(config)
     fix_file_permissions(ovpn_file)
-    logging.info(f"Sucessfully saved riseup.vpn configuration file to {ovpn_file}")
+    logging.info(f"Sucessfully saved RiseupVPN configuration file to {ovpn_file}")
 
 
 def show_status() -> None:
