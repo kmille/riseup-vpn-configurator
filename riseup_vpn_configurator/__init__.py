@@ -132,7 +132,7 @@ def calc_latency(ip: str) -> float:
             latency += lat
         except ping3.errors.PingError as e:
             logging.warning(f"Error ping {ip}: {e}")
-    latency_avg = latency/float(iterations)
+    latency_avg = latency / float(iterations)
     return latency_avg
 
 
@@ -186,7 +186,7 @@ def check_config_file() -> None:
             sys.exit(1)
     if not y or type(y) != dict:
         logging.error(f"Could not parse config file {config_file}")
-        print_default_config()
+        print_default_config(1)
 
     for c in ("server", "protocol", "port", "excluded_routes"):
         if c not in y.keys():
@@ -228,13 +228,12 @@ def get_server_info() -> Optional[dict]:
     sys.exit(1)
 
 
-def check_file_exists(file: Path) -> None:
-    if not file.exists():
-        logging.error(f"File ({file}) not found. You can get it by using --update")
-        sys.exit(1)
-
-
 def generate_configuration() -> None:
+    def check_file_exists(file: Path) -> None:
+        if not file.exists():
+            logging.error(f"File ({file}) not found. You can get it by using --update")
+            sys.exit(1)
+
     check_file_exists(ca_cert_file)
     check_file_exists(cert_file)
     check_file_exists(key_file)
@@ -353,10 +352,10 @@ def fix_file_permissions(file: Path) -> None:
     file.chmod(0o600)
 
 
-def print_default_config() -> NoReturn:
+def print_default_config(return_code: int) -> NoReturn:
     config_template = Path(__file__).parents[1] / config_file.name
     print(config_template.read_text())
-    sys.exit(1)
+    sys.exit(return_code)
 
 
 def check_working_directory() -> None:
@@ -424,7 +423,7 @@ def main() -> None:
     elif args.version:
         show_version()
     elif args.default_config:
-        print_default_config()
+        print_default_config(0)
 
     check_root_permissions()
 
@@ -437,13 +436,13 @@ def main() -> None:
         update_gateways()
         update_vpn_ca_certificate()
         update_vpn_client_credentials()
+    elif args.check_config:
+        check_config_file()
     elif args.list_gateways:
         list_gateways(args.benchmark)
     elif args.generate_config:
         check_config_file()
         generate_configuration()
-    elif args.check_config:
-        check_config_file()
     elif args.status:
         check_config_file()
         show_status()
