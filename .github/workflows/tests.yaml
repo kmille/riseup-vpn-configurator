@@ -1,0 +1,23 @@
+name: run tests for riseup-vpn-configurator
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          poetry install
+      - name: Lint with flake8
+        run: |
+          flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+      - name: Test with pytest
+        run: |
+          poetry run pytest -v -s tests
