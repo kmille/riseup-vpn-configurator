@@ -1,10 +1,14 @@
 [tool.poetry]
 name = "riseup-vpn-configurator"
 version = "0.1.0"
-description = ""
+description = "a simple command line tool to get RiseupVPN up and running"
 authors = ["kmille <github@androidloves.me>"]
 readme = "README.md"
 packages = [{include = "riseup_vpn_configurator"}]
+license = "GPL-3.0-only"
+repository = "https://github.com/kmille/riseup-vpn-configurator"
+homepage = "https://github.com/kmille/riseup-vpn-configurator"
+
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -25,6 +29,9 @@ coverage = "^7.1.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+riseup-vpn-configurator = 'riseup_vpn_configurator.__init__:main'
 
 [tool.mypy]
 ignore_missing_imports = true
