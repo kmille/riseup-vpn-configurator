@@ -1,5 +1,4 @@
 import netifaces
-#from ping3 import ping
 from ping3 import ping
 from ping3.errors import PingError
 
