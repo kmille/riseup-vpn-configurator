@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import logging
 import argparse
 import json
 import yaml
@@ -19,7 +20,6 @@ from typing import Optional, NoReturn
 import ping3
 ping3.EXCEPTIONS = True
 
-import logging
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -42,6 +42,7 @@ VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
 VPN_USER = "openvpn"
 
+
 def cache_api_ca_cert() -> None:
     logging.debug("Updating riseup.net API API CA certificate")
     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
@@ -49,12 +50,12 @@ def cache_api_ca_cert() -> None:
         resp = requests.get(PROVIDER_API_URL)
         j = resp.json()
         assert "ca_cert_uri" in j.keys()
+        logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
+        resp = requests.get(j['ca_cert_uri'])
+        api_ca_cert_file.write_text(resp.text)
     except Exception as e:
         logging.error(e)
         sys.exit(1)
-    logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
-    resp = requests.get(j['ca_cert_uri'])
-    api_ca_cert_file.write_text(resp.text)
     fix_file_permissions(api_ca_cert_file)
     logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
 
@@ -178,12 +179,15 @@ def check_config_file() -> None:
     logging.debug(f"Checking configuration file {config_file}")
 
     with open(config_file) as f:
-        y = yaml.safe_load(f)
+        try:
+            y = yaml.safe_load(f)
+        except yaml.scanner.ScannerError as e:
+            logging.error(f"Could not parse yaml file: {e}")
+            sys.exit(1)
     if not y or type(y) != dict:
         logging.error(f"Could not parse config file {config_file}")
-        sys.exit(1)
+        print_default_config()
 
-    #for c in ("gateway_method", "server", "location", "protocol", "port", "excluded_routes"):
     for c in ("server", "protocol", "port", "excluded_routes"):
         if c not in y.keys():
             logging.error(f"Error checking configuration file ({config_file}): '{c}' not specified")
@@ -280,8 +284,6 @@ key {{ key_file }}"""
 
 
 def show_status() -> None:
-    check_config_file()
-
     if ca_cert_file.exists():
         logging.info("CA certificate: OK")
     else:
@@ -326,9 +328,6 @@ def show_status() -> None:
     except Exception as e:
         logging.error(f"Error finding your public IPv4 address: {e}")
 
-    #resp = requests.get("https://api6.ipify.org?format=json")
-    #logging.info(f"Your IPv6 address: {resp.json()['ip']}")
-
     logging.debug("Start/Stop Riseup-VPN")
     logging.debug("systemctl start openvpn-client@riseup")
     logging.debug("systemctl stop openvpn-client@riseup")
@@ -354,37 +353,26 @@ def fix_file_permissions(file: Path) -> None:
     file.chmod(0o600)
 
 
-def sanity_checks() -> None:
-    def print_default_config() -> None:
-        logging.error(f"You can redirect this output to {config_file}")
-        config_template = Path(__file__).parents[1] / config_file.name
-        print(config_template.read_text())
-        sys.exit(1)
+def print_default_config() -> NoReturn:
+    config_template = Path(__file__).parents[1] / config_file.name
+    print(config_template.read_text())
+    sys.exit(1)
 
+
+def check_working_directory() -> None:
     if not working_dir.exists():
+        try:
+            uid = pwd.getpwnam(VPN_USER).pw_uid
+            gid = grp.getgrnam(VPN_USER).gr_gid
+        except KeyError as e:
+            logging.error(f"Could not find user/group: {e}")
+            sys.exit(1)
         working_dir.mkdir(0o700)
-
-    try:
-        uid = pwd.getpwnam(VPN_USER).pw_uid
-        gid = grp.getgrnam(VPN_USER).gr_gid
-    except KeyError as e:
-        logging.error(f"Could not find user/group: {e}")
-        sys.exit(1)
-    os.chown(working_dir, uid, gid)
+        os.chown(working_dir, uid, gid)
 
     if not config_file.exists():
-        logging.error(f"Could not find config file {config_file}")
-        print_default_config()
-    else:
-        with open(config_file) as f:
-            try:
-                y = yaml.safe_load(f)
-            except yaml.scanner.ScannerError as e:
-                logging.error(f"Could not parse yaml file: {e}")
-                sys.exit(1)
-        if not y or type(y) != dict:
-            logging.error(f"Could not parse config file {config_file}")
-            print_default_config()
+        logging.error(f"Could not find config file {config_file}. Use --default-config for the default config file")
+        sys.exit(1)
 
 
 def uninstall() -> NoReturn:
@@ -416,6 +404,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output")
+    parser.add_argument("-d", "--default-config", action="store_true", help="print default config file risup-vpn.yaml")
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
     parser.add_argument("--uninstall", action="store_true", help="remove all files")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
@@ -430,18 +419,20 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
-    if args.version:
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    elif args.version:
         show_version()
+    elif args.default_config:
+        print_default_config()
 
     check_root_permissions()
 
     if args.uninstall:
         uninstall()
 
-    sanity_checks()
+    check_working_directory()
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
     if args.update:
         update_gateways()
         update_vpn_ca_certificate()
@@ -454,6 +445,7 @@ def main() -> None:
     elif args.check_config:
         check_config_file()
     elif args.status:
+        check_config_file()
         show_status()
 
 
