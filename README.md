@@ -9,7 +9,7 @@
 There is already a [riseup-vpn](https://aur.archlinux.org/packages/riseup-vpn) package in AUR. But there a few things I don't like:
 
 - the software is pretty bloated (unnecessary GUI, I got `could not find polkit agent` error messages)
-- sthe autostart feature just put's a file into `~/.config/autostart` which doesn't work with i3
+- the autostart feature just put's a file into `~/.config/autostart` which doesn't work with i3
 - the VPN does not use the best available crypto/ciphers (TLS1.2 instead of TLS1.3)
 - it's not possible to exclude routes from the VPN
 
@@ -44,7 +44,7 @@ The code for the RiseupVPN Linux client can be found [here](https://0xacab.org/l
 
 # Monitoring with py3status
 
-If you use [py3status](https://github.com/ultrabug/py3status) as i3bar implementation, you can use [monitor_riseupvpn.py](/monitor_riseupvpn.py) for monitoring.
+If you use [py3status](https://github.com/ultrabug/py3status) as i3bar implementation, you can use [monitor_riseupvpn.py](/monitoring/monitor_riseupvpn.py) for monitoring.
 
 # Known issues
 
