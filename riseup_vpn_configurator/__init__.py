@@ -430,12 +430,13 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
+    if args.version:
+        show_version()
+
     check_root_permissions()
 
     if args.uninstall:
         uninstall()
-    elif args.version:
-        show_version()
 
     sanity_checks()
 
