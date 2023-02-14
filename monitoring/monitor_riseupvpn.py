@@ -9,8 +9,7 @@ from ping3.errors import PingError
     - can I ping the gateway of tun0?
 
     requires:
-        sudo pacman -S python-netifaces
-        pip install --user ping3 # there is no AUR package for it
+        sudo pacman -S python-netifaces python-ping3
 """
 
 
