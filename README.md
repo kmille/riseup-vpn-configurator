@@ -1,3 +1,9 @@
+[![tests](https://github.com/kmille/riseup-vpn-configurator/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/kmille/riseup-vpn-configurator/actions/workflows/tests.yaml)
+![Python 3.6](https://img.shields.io/badge/python-%3E=3.5-blue.svg)
+![license](https://img.shields.io/github/license/kmille/riseup-vpn-configurator?color=green)
+![latest tag](https://img.shields.io/github/v/tag/kmille/riseup-vpn-configurator?sort=semver)
+![pypi-version](https://img.shields.io/pypi/v/riseup-vpn-configurator)
+![pypi-downloads](https://img.shields.io/pypi/dm/riseup-vpn-configurator)
 # riseup-vpn-configurator
 
 > Riseup offers Personal VPN service for censorship circumvention, location anonymization and traffic encryption. To make this possible, it [sends all your internet traffic through an encrypted connection](https://riseup.net/en/vpn/how-vpn-works) to riseup.net, where it then goes out onto the public internet.
@@ -39,9 +45,7 @@ options:
 ```
 
 # How to use it
-
-![asciicast](https://asciinema.org/a/559611.svg)
-
+[![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
 # Installation (as a dev)
 
 We need to run the tool with root permissions (for example to write to /etc). Running the tests also need root privileges (because we use chown). Therefore, I recommend running the dev environment also as root user.
