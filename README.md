@@ -44,6 +44,21 @@ options:
   --version             show version
 ```
 
+Default config file `/etc/riseup-vpn.yaml`
+```yaml
+---
+# /etc/riseup-vpn.yaml
+
+server: vpn07-par.riseup.net
+protocol: udp
+port: 53
+
+# your local subnet is excluded by default
+excluded_routes:
+  - 1.1.1.1
+  - 192.168.123.0/24
+```
+
 # How to use it
 [![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
 # Installation (as a dev)
