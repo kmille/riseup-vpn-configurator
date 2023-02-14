@@ -17,7 +17,30 @@ The riseup-vpn-configurator is a simple command line tool that tries to solve th
 
 # Installation
 
-Please don't install it as user and run it as root, as this makes an attacker very easy to escalate privileges.
+Please don't install it as user and run it as root, as this makes it very easy for an attacker to escalate privileges. You can install the [Arch Linux AUR package](https://aur.archlinux.org/packages/riseup-vpn-configurator) or use it with `pip install --user riseup-vpn-configurator` as root. Check out the `How to use it` below to get the VPN up and running. You can start RiseupVPN with `systemctl start openvpn-client@riseup` and autostart it with `systemctl enable openvpn-client@riseup`. Please keep in mind that the client certificate is only valid for 90 and you have to update it manually.
+
+```bash
+kmille@linbox:~ riseup-vpn-configurator --help
+usage: riseup-vpn-configurator [-h] [-v] [-d] [-u] [--uninstall] [-l] [-b] [-c] [-g] [-s] [--version]
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         show verbose output
+  -d, --default-config  print default config file risup-vpn.yaml
+  -u, --update          update gateway list and client certificate/key
+  --uninstall           remove all files
+  -l, --list-gateways   show available VPN server
+  -b, --benchmark       use with --list - pings the gateway and shows the latency
+  -c, --check-config    check syntax of /etc/riseup-vpn.yaml. Generates default config
+  -g, --generate-config
+                        Generate openvpn config (/etc/openvpn/client/riseup.conf)
+  -s, --status          show current state of riseup-vpn
+  --version             show version
+```
+
+# How to use it
+
+![asciicast](https://asciinema.org/a/559611.svg)
 
 # Installation (as a dev)
 
@@ -29,18 +52,13 @@ root@linbox:tmp cd riseup-vpn-configurator
 root@linbox:riseup-vpn-configurator poetry install
 poetry run python riseup_vpn_configurator/__init__.py --help
 root@linbox:riseup-vpn-configurator poetry run pytest -v -s -x --pdb
+root@linbox:riseup-vpn-configurator poetry run flake8 --ignore=E501 riseup_vpn_configurator/
+root@linbox:riseup-vpn-configurator poetry run mypy riseup_vpn_configurator/
 ```
-
-# How to use it
 
 # How it works
 
 The code for the RiseupVPN Linux client can be found [here](https://0xacab.org/leap/bitmask-vpn). It uses OpenVPN. Everyone uses the same client certificate/key to authenticate. The client certificate is only valid for 90 days. The VPN gateway list and client certificate can be fetched by a public API.
-
-
-
-- systemctl start openvpn-client@riseup
-- systemctl enable openvpn-client@riseup
 
 # Monitoring with py3status
 
@@ -49,9 +67,3 @@ If you use [py3status](https://github.com/ultrabug/py3status) as i3bar implement
 # Known issues
 
 RiseupVPN does not support IPv6. It's routed over the tunnel but then gets blocked. Also, the VPN hangs after suspend ([see Arch Wiki](https://wiki.archlinux.org/title/OpenVPN#Client_daemon_not_reconnecting_after_suspend)). To solve this issue, the AUR package uses [openvpn-reconnect](https://aur.archlinux.org/packages/openvpn-reconnect) as a dependency.
-
-# Ressources
-- https://riseup.net/de/vpn
-- https://riseup.net/de/vpn/linux
-- https://0xacab.org/leap/bitmask-vpn
-- https://gitlab.com/nitrohorse/bitmask-openvpn-generator
