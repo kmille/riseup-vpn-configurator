@@ -137,6 +137,10 @@ def calc_latency(ip: str) -> float:
 
 
 def list_gateways(bench: bool) -> None:
+    if not gateway_json.exists():
+        logging.error(f"Could not find gateway list ({gateway_json}). You can get it with --update")
+        sys.exit(1)
+
     with open(gateway_json) as f:
         j = json.load(f)
     if bench:
