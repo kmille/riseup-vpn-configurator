@@ -17,8 +17,8 @@ import psutil
 import shutil
 
 from typing import Optional, NoReturn
-import ping3
-ping3.EXCEPTIONS = True
+
+from riseup_vpn_configurator.latency import calc_latency
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
@@ -121,19 +121,6 @@ def update_vpn_client_credentials() -> None:
     except Exception as e:
         logging.error(e)
         sys.exit(1)
-
-
-def calc_latency(ip: str) -> float:
-    latency = 0.0
-    iterations = 4
-    for i in range(iterations):
-        try:
-            lat = ping3.ping(ip, timeout=5)
-            latency += lat
-        except ping3.errors.PingError as e:
-            logging.warning(f"Error ping {ip}: {e}")
-    latency_avg = latency / float(iterations)
-    return latency_avg
 
 
 def list_gateways(bench: bool) -> None:
