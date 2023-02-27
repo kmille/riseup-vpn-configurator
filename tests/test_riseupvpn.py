@@ -135,6 +135,7 @@ class TestRiseupVPN:
         assert list(config.keys()) == ['server', 'protocol', 'port', 'excluded_routes']
 
     def test_generate_vpn_configuration(self, capsys, caplog):
+        import yaml
         from riseup_vpn_configurator import generate_configuration, update_gateways, update_vpn_client_credentials, update_vpn_ca_certificate, print_default_config
 
         # BEGIN GENERATE CONFIG
@@ -142,7 +143,10 @@ class TestRiseupVPN:
             print_default_config(0)
             assert se.value.code == 0
         captured = capsys.readouterr()
-        riseup_vpn_configurator.config_file.write_text(captured.out)
+        config = yaml.safe_load(captured.out)
+        config['excluded_routes'].append("one.one.one.one")
+        with riseup_vpn_configurator.config_file.open("w") as f:
+            yaml.safe_dump(config, f)
         # END GENERATE CONFIG
 
         update_gateways()
@@ -153,6 +157,7 @@ class TestRiseupVPN:
         assert "Sucessfully saved RiseupVPN configuration" in caplog.text
 
         vpn_config = riseup_vpn_configurator.ovpn_file.read_text()
+        assert "route 8.8.8.8 255.255.255.255 net_gateway" in vpn_config
         assert "route 1.1.1.1 255.255.255.255 net_gateway" in vpn_config
         assert "route 192.168.123.0 255.255.255.0 net_gateway" in vpn_config
         assert "proto udp" in vpn_config

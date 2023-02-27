@@ -45,13 +45,22 @@ options:
 ```
 
 Default config file `/etc/riseup-vpn.yaml`
-```yaml
+```yamy
 ---
 # /etc/riseup-vpn.yaml
 
 server: vpn07-par.riseup.net
 protocol: udp
 port: 53
+
+# excluded_routes: list servcies that should not be routed over VPN
+# can be an ipaddress, network or hostname
+# your local subnet is excluded by default
+excluded_routes:
+  - 8.8.8.8
+  - 192.168.123.0/24
+  - us02web.zoom.us
+```
 
 # your local subnet is excluded by default
 excluded_routes:

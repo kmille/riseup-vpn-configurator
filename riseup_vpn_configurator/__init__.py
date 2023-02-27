@@ -15,6 +15,7 @@ from pyasn1_modules import pem, rfc2459
 from pyasn1.codec.der import decoder
 import psutil
 import shutil
+import socket
 
 from typing import Optional, NoReturn
 
@@ -156,13 +157,19 @@ def get_excluded_routes() -> str:
     with open(config_file) as f:
         y = yaml.safe_load(f)
     out = ""
-    for excluded_route in y['excluded_routes']:
+    for host in y['excluded_routes']:
         try:
-            net = ip_network(excluded_route, strict=False)
-        except ValueError as e:
-            logging.error(e)
-            sys.exit(1)
-        out += f"route {net.network_address} {net.netmask} net_gateway\n"
+            net = ip_network(host, strict=False)
+            exclude_addr = net.network_address
+            exclude_netmask = net.netmask
+        except ValueError:
+            try:
+                exclude_addr = socket.gethostbyname(host)
+                exclude_netmask = "255.255.255.255"
+            except socket.gaierror as e:
+                logging.error(f"Error parsing {host} in excluded_routes (not a ipaddress/network or hostname): {e}")
+                sys.exit(1)
+        out += f"route {exclude_addr} {exclude_netmask} net_gateway\n"
     return out.strip()
 
 
@@ -191,12 +198,15 @@ def check_config_file() -> None:
         logging.error(f"Error checking configuration file ({config_file}): 'port' must be numeric (specified was '{y['port']}')")
         sys.exit(1)
 
-    for route in y['excluded_routes']:
+    for host in y['excluded_routes']:
         try:
-            _ = ip_network(route, strict=False)
-        except ValueError as e:
-            logging.error(f"Error checking configuration file ({config_file}): exclude route '{route}' is invalid: {e}")
-            sys.exit(1)
+            _ = ip_network(host, strict=False)
+        except ValueError:
+            try:
+                socket.gethostbyname(host)
+            except socket.gaierror as e:
+                logging.error(f"Error checking configuration file ({config_file}): exclude route '{host}' is not an ip address/network or a valid hostname:: {e}")
+                sys.exit(1)
     logging.info("Configuration file: OK")
 
 
