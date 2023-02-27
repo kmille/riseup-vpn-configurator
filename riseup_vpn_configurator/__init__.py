@@ -160,11 +160,11 @@ def get_excluded_routes() -> str:
     for host in y['excluded_routes']:
         try:
             net = ip_network(host, strict=False)
-            exclude_addr = net.network_address
-            exclude_netmask = net.netmask
+            exclude_addr = str(net.network_address)
+            exclude_netmask = str(net.netmask)
         except ValueError:
             try:
-                exclude_addr = socket.gethostbyname(host)
+                exclude_addr = str(socket.gethostbyname(host))
                 exclude_netmask = "255.255.255.255"
             except socket.gaierror as e:
                 logging.error(f"Error parsing {host} in excluded_routes (not a ipaddress/network or hostname): {e}")
