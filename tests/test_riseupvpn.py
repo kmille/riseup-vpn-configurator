@@ -103,7 +103,7 @@ class TestRiseupVPN:
         # END CHECK KEY
 
     def test_calc_latency(self):
-        from riseup_vpn_configurator.latency import calc_latency
+        from riseup_vpn_configurator import calc_latency
         latency = calc_latency("1.1.1.1")
         assert type(latency) == float
 

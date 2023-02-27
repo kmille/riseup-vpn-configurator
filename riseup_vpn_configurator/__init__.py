@@ -16,10 +16,10 @@ from pyasn1.codec.der import decoder
 import psutil
 import shutil
 import socket
-
 from typing import Optional, NoReturn
 
-from riseup_vpn_configurator.latency import calc_latency
+import ping3
+ping3.EXCEPTIONS = True
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
@@ -42,6 +42,19 @@ VPN_CA_CERT_URL = "https://black.riseup.net/ca.crt"
 VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
 VPN_USER = "openvpn"
+
+
+def calc_latency(ip: str) -> float:
+    latency = 0.0
+    iterations = 4
+    for i in range(iterations):
+        try:
+            lat = ping3.ping(ip, timeout=5)
+            latency += lat
+        except ping3.errors.PingError as e:
+            logging.warning(f"Error ping {ip}: {e}")
+    latency_avg = latency / float(iterations)
+    return latency_avg
 
 
 def cache_api_ca_cert() -> None:
