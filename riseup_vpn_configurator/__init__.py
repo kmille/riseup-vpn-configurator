@@ -173,16 +173,17 @@ def get_excluded_routes() -> str:
     for host in y['excluded_routes']:
         try:
             net = ip_network(host, strict=False)
-            exclude_addr = str(net.network_address)
-            exclude_netmask = str(net.netmask)
+            out += f"route {net.network_address} {net.netmask} net_gateway\n"
+            logging.debug(f"Added '{net.network_address}' as an exception")
         except ValueError:
             try:
-                exclude_addr = str(socket.gethostbyname(host))
-                exclude_netmask = "255.255.255.255"
+                _, _, ip_addresses = socket.gethostbyname_ex(host)
+                for ip_address in ip_addresses:
+                    logging.debug(f"Resolved '{host}' to '{ip_address}'. Added as an exception")
+                    out += f"route {ip_address} 255.255.255.255 net_gateway\n"
             except socket.gaierror as e:
                 logging.error(f"Error parsing {host} in excluded_routes (not a ipaddress/network or hostname): {e}")
                 sys.exit(1)
-        out += f"route {exclude_addr} {exclude_netmask} net_gateway\n"
     return out.strip()
 
 

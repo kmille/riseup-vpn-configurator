@@ -152,12 +152,17 @@ class TestRiseupVPN:
         update_gateways()
         update_vpn_client_credentials()
         update_vpn_ca_certificate()
-        caplog.set_level(logging.INFO)
+
+        caplog.set_level(logging.DEBUG)
         generate_configuration()
+        assert "Added '8.8.8.8' as an exception" in caplog.text
+        assert "Resolved 'one.one.one.one' to '1.1.1.1'." in caplog.text
+        assert "Resolved 'one.one.one.one' to '1.0.0.1'." in caplog.text
         assert "Sucessfully saved RiseupVPN configuration" in caplog.text
 
         vpn_config = riseup_vpn_configurator.ovpn_file.read_text()
         assert "route 8.8.8.8 255.255.255.255 net_gateway" in vpn_config
+        assert "route 1.0.0.1 255.255.255.255 net_gateway" in vpn_config
         assert "route 1.1.1.1 255.255.255.255 net_gateway" in vpn_config
         assert "route 192.168.123.0 255.255.255.0 net_gateway" in vpn_config
         assert "proto udp" in vpn_config
