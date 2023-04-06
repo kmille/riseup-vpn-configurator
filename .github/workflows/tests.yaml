@@ -21,7 +21,6 @@ jobs:
           sudo useradd openvpn
           # poetry 1.1.12 is too old (with --group dev instead of --dev), so wie use pip to install it
           sudo pip install poetry
-          poetry --version
           sudo poetry install
       - name: Lint with flake8
         run: |
