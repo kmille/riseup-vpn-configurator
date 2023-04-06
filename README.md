@@ -26,15 +26,16 @@ The riseup-vpn-configurator is a simple command line tool that tries to solve th
 Please don't install it as user and run it as root, as this makes it very easy for an attacker to escalate privileges. You can install the [Arch Linux AUR package](https://aur.archlinux.org/packages/riseup-vpn-configurator) or use it with `pip install --user riseup-vpn-configurator` as root. Check out the `How to use it` below to get the VPN up and running. You can start RiseupVPN with `systemctl start openvpn-client@riseup` and autostart it with `systemctl enable openvpn-client@riseup`. Please keep in mind that the client certificate is only valid for 90 and you have to update it manually.
 
 ```bash
-kmille@linbox:~ riseup-vpn-configurator --help
-usage: riseup-vpn-configurator [-h] [-v] [-d] [-u] [--uninstall] [-l] [-b] [-c] [-g] [-s] [--version]
+usage: riseup-vpn-configurator [-h] [-v] [--no-check-certificate] [-d] [-u] [--uninstall] [-l] [-b] [-c] [-g] [-s] [--version]
 
 options:
   -h, --help            show this help message and exit
   -v, --verbose         show verbose output
+  --no-check-certificate
+                        skip ssl certificate check (used by --update to get the config/client private key from the API)
   -d, --default-config  print default config file risup-vpn.yaml
   -u, --update          update gateway list and client certificate/key
-  --uninstall           remove all files
+  --uninstall           remove all files in /opt/riseup-vpn
   -l, --list-gateways   show available VPN server
   -b, --benchmark       use with --list - pings the gateway and shows the latency
   -c, --check-config    check syntax of /etc/riseup-vpn.yaml. Generates default config

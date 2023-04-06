@@ -23,7 +23,7 @@ ping3.EXCEPTIONS = True
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+# logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 working_dir = Path("/opt/riseup-vpn")
 api_ca_cert_file = working_dir / Path("api-ca.pem")
@@ -42,6 +42,7 @@ VPN_CA_CERT_URL = "https://black.riseup.net/ca.crt"
 VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
 VPN_USER = "openvpn"
+VERIFY_SSL_CERTIFICATE = True
 
 
 def calc_latency(ip: str) -> float:
@@ -61,11 +62,11 @@ def cache_api_ca_cert() -> None:
     logging.debug("Updating riseup.net API API CA certificate")
     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
     try:
-        resp = requests.get(PROVIDER_API_URL)
+        resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
         j = resp.json()
         assert "ca_cert_uri" in j.keys()
         logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
-        resp = requests.get(j['ca_cert_uri'])
+        resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
         api_ca_cert_file.write_text(resp.text)
     except Exception as e:
         logging.error(e)
@@ -97,7 +98,7 @@ def update_vpn_ca_certificate() -> None:
     """
     logging.info("Updating VPN CA certificate")
     try:
-        resp = requests.get(VPN_CA_CERT_URL)
+        resp = requests.get(VPN_CA_CERT_URL, verify=VERIFY_SSL_CERTIFICATE)
         assert "-----BEGIN CERTIFICATE-----" in resp.text
         assert "-----END CERTIFICATE-----" in resp.text
         ca_cert_file.write_text(resp.text)
@@ -418,9 +419,10 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output")
+    parser.add_argument("--no-check-certificate", action="store_true", help="skip ssl certificate check (used by --update to get the config/client private key from the API)")
     parser.add_argument("-d", "--default-config", action="store_true", help="print default config file risup-vpn.yaml")
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
-    parser.add_argument("--uninstall", action="store_true", help="remove all files")
+    parser.add_argument("--uninstall", action="store_true", help=f"remove all files in {working_dir}")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
     parser.add_argument("-b", "--benchmark", action="store_true", help="use with --list - pings the gateway and shows the latency")
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
@@ -435,6 +437,9 @@ def main() -> None:
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+    elif args.no_check_certificate:
+        global VERIFY_SSL_CERTIFICATE
+        VERIFY_SSL_CERTIFICATE = False
     elif args.version:
         show_version()
     elif args.default_config:

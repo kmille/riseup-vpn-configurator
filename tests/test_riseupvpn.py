@@ -5,6 +5,7 @@ import tempfile
 import logging
 
 import riseup_vpn_configurator
+riseup_vpn_configurator.VERIFY_SSL_CERTIFICATE = False
 
 
 class TestRiseupVPN:
