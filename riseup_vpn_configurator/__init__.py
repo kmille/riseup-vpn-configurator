@@ -439,28 +439,26 @@ def main() -> None:
         show_version()
     elif args.default_config:
         print_default_config(0)
-
-    check_root_permissions()
-
-    if args.uninstall:
-        uninstall()
-
-    check_working_directory()
-
-    if args.update:
-        update_gateways()
-        update_vpn_ca_certificate()
-        update_vpn_client_credentials()
     elif args.check_config:
         check_config_file()
     elif args.list_gateways:
         list_gateways(args.benchmark)
-    elif args.generate_config:
-        check_config_file()
-        generate_configuration()
     elif args.status:
         check_config_file()
         show_status()
+
+    check_root_permissions()
+    if args.uninstall:
+        uninstall()
+
+    check_working_directory()
+    if args.update:
+        update_gateways()
+        update_vpn_ca_certificate()
+        update_vpn_client_credentials()
+    elif args.generate_config:
+        check_config_file()
+        generate_configuration()
 
 
 if __name__ == '__main__':
