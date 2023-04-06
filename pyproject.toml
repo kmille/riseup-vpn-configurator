@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "riseup-vpn-configurator"
-version = "0.1.4"
+version = "0.1.5"
 description = "a simple command line tool to get RiseupVPN up and running"
 authors = ["kmille <github@androidloves.me>"]
 readme = "README.md"
