@@ -42,6 +42,10 @@ options:
   -g, --generate-config
                         Generate openvpn config (/etc/openvpn/client/riseup.conf)
   -s, --status          show current state of riseup-vpn
+  --start               starts openvpn service
+  --stop                stops openvpn service
+  --restart             restarts openvpn service
+  --log                 show systemd log
   --version             show version
 ```
 
@@ -81,6 +85,11 @@ root@linbox:riseup-vpn-configurator poetry run mypy riseup_vpn_configurator/
 # How it works
 
 The code for the RiseupVPN Linux client can be found [here](https://0xacab.org/leap/bitmask-vpn). It uses OpenVPN. Everyone uses the same client certificate/key to authenticate. The client certificate is only valid for 90 days. The VPN gateway list and client certificate can be fetched by a public API.
+
+# Allow for non-root user
+```bash
+kmille ALL = NOPASSWD: /usr/bin/riseup-vpn-configurator
+```
 
 # Monitoring with py3status
 
