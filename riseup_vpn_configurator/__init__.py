@@ -5,6 +5,7 @@ import logging
 import argparse
 import json
 import yaml
+import subprocess
 import pwd
 import grp
 from jinja2 import Template
@@ -408,6 +409,35 @@ def uninstall() -> NoReturn:
     sys.exit(0)
 
 
+def print_error_log():
+    logging.info("Printing debug log")
+    try:
+        p = subprocess.run(["journalctl", "-u", "openvpn-client@riseup", "-n", "50"], capture_output=True)
+        logging.info(p.stdout.decode())
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Could not start riseup vpn: {e}")
+
+
+def start_openvpn():
+    try:
+        subprocess.run(["systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Could not start riseup vpn: {e}")
+        print_error_log()
+    else:
+        logging.info("riseupvpn sucessfully started")
+
+
+def stop_openvpn():
+    try:
+        subprocess.run(["systemctl", "stop", "openvpn-client@riseup"], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Could not stop riseup vpn: {e}")
+        print_error_log()
+    else:
+        logging.info("riseupvpn sucessfully stopped")
+
+
 def show_version():
     from importlib.metadata import version
     app_name = "riseup-vpn-configurator"
@@ -428,6 +458,10 @@ def main() -> None:
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
     parser.add_argument("-g", "--generate-config", action="store_true", help=f"Generate openvpn config ({ovpn_file})")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
+    parser.add_argument("--start", action="store_true", help="starts openvpn service")
+    parser.add_argument("--stop", action="store_true", help="stops openvpn service")
+    parser.add_argument("--restart", action="store_true", help="restarts openvpn service")
+    parser.add_argument("--log", action="store_true", help="show systemd log")
     parser.add_argument("--version", action="store_true", help="show version")
 
     args = parser.parse_args()
@@ -466,6 +500,15 @@ def main() -> None:
     elif args.status:
         check_config_file()
         show_status()
+    elif args.start:
+        start_openvpn()
+    elif args.stop:
+        stop_openvpn()
+    elif args.restart:
+        stop_openvpn()
+        start_openvpn()
+    elif args.log:
+        print_error_log()
 
 
 if __name__ == '__main__':
