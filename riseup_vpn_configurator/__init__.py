@@ -471,9 +471,10 @@ def main() -> None:
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    elif args.no_check_certificate:
+    if args.no_check_certificate:
         global VERIFY_SSL_CERTIFICATE
         VERIFY_SSL_CERTIFICATE = False
+
     elif args.version:
         show_version()
     elif args.default_config:
