@@ -21,7 +21,7 @@ There is already a [riseup-vpn](https://aur.archlinux.org/packages/riseup-vpn) p
 
 The riseup-vpn-configurator is a simple command line tool that tries to solve these problems. It generates an OpenVPN configuration file that can be used by `systemctl`.
 
-UPDATE 01.10.2023: RiseupVPN still works, but the API backend is kinda broken (sometimes ...). See #4.
+UPDATE 01.10.2023: RiseupVPN still works, but the API backend is kinda broken (sometimes ...). See [#4](https://github.com/kmille/riseup-vpn-configurator/issues/4).
 
 # Installation
 
