@@ -21,6 +21,8 @@ There is already a [riseup-vpn](https://aur.archlinux.org/packages/riseup-vpn) p
 
 The riseup-vpn-configurator is a simple command line tool that tries to solve these problems. It generates an OpenVPN configuration file that can be used by `systemctl`.
 
+UPDATE 01.10.2023: RiseupVPN still works, but the API backend is kinda broken (sometimes ...). See #4.
+
 # Installation
 
 Please don't install it as user and run it as root, as this makes it very easy for an attacker to escalate privileges. You can install the [Arch Linux AUR package](https://aur.archlinux.org/packages/riseup-vpn-configurator) or use it with `pip install --user riseup-vpn-configurator` as root. Check out the `How to use it` below to get the VPN up and running. You can start RiseupVPN with `systemctl start openvpn-client@riseup` and autostart it with `systemctl enable openvpn-client@riseup`. Please keep in mind that the client certificate is only valid for 90 and you have to update it manually.
