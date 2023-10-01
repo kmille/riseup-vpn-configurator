@@ -2,8 +2,8 @@ name: run tests for riseup-vpn-configurator
 
 on:
   push:
-  schedule:
-    - cron: '0 7 * * *'
+    #schedule:
+    #- cron: '0 7 * * *'
 
 jobs:
   build:
