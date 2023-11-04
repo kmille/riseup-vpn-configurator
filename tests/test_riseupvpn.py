@@ -128,7 +128,7 @@ class TestRiseupVPN:
         update_gateways()
         list_gateways(True)
         captured = capsys.readouterr()
-        assert "vpn01-sea.riseup.net location=Seattle       ip=204.13.164.252  latency=" in captured.out
+        assert "vpn01-sea.riseup.net location=Seattle       ip=204.13.164.252  rtt=" in captured.out
         assert "protocols=tcp,udp ports=53,80,1194" in captured.out
 
     def test_generate_configurator_config(self, capsys):
