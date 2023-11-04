@@ -140,7 +140,7 @@ def update_vpn_client_credentials() -> None:
         cert_file.write_text(cert)
         fix_file_permissions(cert_file)
         logging.info(f"Sucessfully saved VPN client certificate to {cert_file}")
-    except (requests.RequestsException, ValueError) as e:
+    except (requests.RequestException, ValueError) as e:
         logging.error(e)
         sys.exit(1)
 
