@@ -48,6 +48,9 @@ def get_rtt(ip: str) -> float:
     try:
         resp = ping(ip, timeout=2, count=5, interval=0.5)
         logging.debug(f"Getting rtt for{resp}")
+        # ping 1.1.1.1brokenip returns 0.0 and does not raise an exception ...?
+        if resp.avg_rtt == 0.0:
+            return 9000.0
         return resp.avg_rtt
     except ICMPLibError as e:
         logging.warning(f"Error getting rtt for {ip}: {e}")
