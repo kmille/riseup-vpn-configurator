@@ -62,12 +62,13 @@ def cache_api_ca_cert() -> None:
     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
     try:
         resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
+        resp.raise_for_status()
         j = resp.json()
-        assert "ca_cert_uri" in j.keys()
         logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
         resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
+        resp.raise_for_status()
         api_ca_cert_file.write_text(resp.text)
-    except Exception as e:
+    except (requests.RequestException, KeyError) as e:
         logging.error(e)
         sys.exit(1)
     fix_file_permissions(api_ca_cert_file)
@@ -82,9 +83,10 @@ def update_gateways() -> None:
     cache_api_ca_cert()
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
     try:
-        resp = requests.get(GATEWAYS_API_URL, verify=str(api_ca_cert_file))
+        resp = requests.get(GATEWAYS_API_URL, verify=api_ca_cert_file.as_posix())
+        resp.raise_for_status()
         gateway_json.write_text(resp.text)
-    except Exception as e:
+    except requests.RequestException as e:
         logging.error(e)
         sys.exit(1)
     fix_file_permissions(gateway_json)
@@ -98,10 +100,12 @@ def update_vpn_ca_certificate() -> None:
     logging.info("Updating VPN CA certificate")
     try:
         resp = requests.get(VPN_CA_CERT_URL, verify=VERIFY_SSL_CERTIFICATE)
-        assert "-----BEGIN CERTIFICATE-----" in resp.text
-        assert "-----END CERTIFICATE-----" in resp.text
+        resp.raise_for_status()
+        if "-----BEGIN CERTIFICATE-----" not in resp.text or \
+           "-----END CERTIFICATE-----" not in resp.text:
+            raise ValueError(f"Response is invalid\nURL: {VPN_CA_CERT_URL}\nResponse:\n{resp.text}")
         ca_cert_file.write_text(resp.text)
-    except Exception as e:
+    except (requests.RequestException, ValueError) as e:
         logging.error(e)
         sys.exit(1)
     fix_file_permissions(ca_cert_file)
@@ -115,24 +119,28 @@ def update_vpn_client_credentials() -> None:
     """
     logging.info("Updating client certificate/key")
     try:
-        resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=str(api_ca_cert_file))
+        resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=api_ca_cert_file.as_posix())
+        resp.raise_for_status()
         SEPERATOR = "-----BEGIN CERTIFICATE-----"
         parts = resp.text.split(SEPERATOR)
         key = parts[0].strip()
-        assert "-----BEGIN RSA PRIVATE KEY-----" in key
-        assert "-----END RSA PRIVATE KEY-----" in key
+        if "-----BEGIN RSA PRIVATE KEY-----" not in key or \
+                "-----END RSA PRIVATE KEY-----" not in key:
+            raise ValueError(f"Private key could not be found:\n{resp.text}")
 
         key_file.write_text(key)
         fix_file_permissions(key_file)
         logging.info(f"Sucessfully saved VPN client key to {key_file}")
 
         cert = f"{SEPERATOR}{parts[1]}".strip()
-        assert "-----BEGIN CERTIFICATE-----" in cert
-        assert "-----END CERTIFICATE-----" in cert
+        if "-----BEGIN CERTIFICATE-----" not in cert or \
+                "-----END CERTIFICATE-----" not in cert:
+            raise ValueError(f"Certificate could not be found:\n{resp.text}")
+
         cert_file.write_text(cert)
         fix_file_permissions(cert_file)
         logging.info(f"Sucessfully saved VPN client certificate to {cert_file}")
-    except Exception as e:
+    except (requests.RequestsException, ValueError) as e:
         logging.error(e)
         sys.exit(1)
 
@@ -196,7 +204,7 @@ def check_config_file() -> None:
         except yaml.scanner.ScannerError as e:
             logging.error(f"Could not parse yaml file: {e}")
             sys.exit(1)
-    if not y or type(y) != dict:
+    if not y or type(y) is not dict:
         logging.error(f"Could not parse config file {config_file}")
         print_default_config(1)
 
@@ -338,8 +346,9 @@ def show_status() -> None:
 
     try:
         resp = requests.get("https://api4.ipify.org?format=json", timeout=5)
+        resp.raise_for_status()
         logging.info(f"Your IPv4 address: {resp.json()['ip']}")
-    except Exception as e:
+    except requests.RequestException as e:
         logging.warning(f"Error finding your public IPv4 address: {e}")
 
     logging.debug("Start/Stop Riseup-VPN")
@@ -368,7 +377,7 @@ def fix_file_permissions(file: Path) -> None:
 
 
 def print_default_config(return_code: int) -> NoReturn:
-    config_template = Path(__file__).parents[0] / config_file.name
+    config_template = Path(__file__).parent / config_file.name
     print(config_template.read_text())
     sys.exit(return_code)
 
@@ -413,7 +422,7 @@ def print_error_log():
         p = subprocess.run(["journalctl", "-u", "openvpn-client@riseup", "-n", "50"], capture_output=True)
         logging.info(p.stdout.decode())
     except subprocess.CalledProcessError as e:
-        logging.error(f"Could not start riseup vpn: {e}")
+        logging.error(f"Could not get logs for riseup vpn: {e}")
 
 
 def start_openvpn():
