@@ -103,10 +103,16 @@ class TestRiseupVPN:
         assert key_file.strip().endswith("-----END RSA PRIVATE KEY-----")
         # END CHECK KEY
 
-    def test_calc_latency(self):
-        from riseup_vpn_configurator import calc_latency
-        latency = calc_latency("1.1.1.1")
-        assert type(latency) is float
+    def test_get_rtt_valid(self):
+        from riseup_vpn_configurator import get_rtt
+        rtt = get_rtt("1.1.1.1")
+        assert type(rtt) is float
+
+    def test_get_rtt_invalid(self):
+        from riseup_vpn_configurator import get_rtt
+        rtt = get_rtt("1.1.1.1brokenip")
+        assert type(rtt) is float
+        assert rtt == 9000.0
 
     def test_list_gateways(self, capsys):
         from riseup_vpn_configurator import list_gateways, update_gateways

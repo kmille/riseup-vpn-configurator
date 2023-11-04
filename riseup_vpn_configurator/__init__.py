@@ -15,12 +15,10 @@ from ipaddress import ip_network
 from pyasn1_modules import pem, rfc2459
 from pyasn1.codec.der import decoder
 import psutil
+from icmplib import ping, ICMPLibError
 import shutil
 import socket
 from typing import Optional, NoReturn
-
-import ping3
-ping3.EXCEPTIONS = True
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
@@ -46,17 +44,14 @@ VPN_USER = "openvpn"
 VERIFY_SSL_CERTIFICATE = True
 
 
-def calc_latency(ip: str) -> float:
-    latency = 0.0
-    iterations = 4
-    for i in range(iterations):
-        try:
-            lat = ping3.ping(ip, timeout=5)
-            latency += lat
-        except ping3.errors.PingError as e:
-            logging.warning(f"Error ping {ip}: {e}")
-    latency_avg = latency / float(iterations)
-    return latency_avg
+def get_rtt(ip: str) -> float:
+    try:
+        resp = ping(ip, timeout=2, count=5, interval=0.5)
+        logging.debug(f"Getting rtt for{resp}")
+        return resp.avg_rtt
+    except ICMPLibError as e:
+        logging.warning(f"Error getting rtt for {ip}: {e}")
+        return 9000.0
 
 
 def cache_api_ca_cert() -> None:
@@ -147,10 +142,10 @@ def list_gateways(bench: bool) -> None:
     with open(gateway_json) as f:
         j = json.load(f)
     if bench:
-        logging.info("Listing VPN gateways with latency. Plase turn off the VPN before.")
+        logging.info("Listing VPN gateways with rtt (round-trip-time). Plase turn off the VPN before to get proper results.")
         for gw in j['gateways']:
-            gw['latency'] = calc_latency(gw['ip_address'])
-        gateways = sorted(j['gateways'], key=lambda gw: gw['latency'])
+            gw['rtt'] = get_rtt(gw['ip_address'])
+        gateways = sorted(j['gateways'], key=lambda gw: gw['rtt'])
     else:
         gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
 
@@ -158,8 +153,8 @@ def list_gateways(bench: bool) -> None:
     for gw in gateways:
         out += f"{gw['host']} location={gw['location']:<13} ip={gw['ip_address']:<15} "
         if bench:
-            latency_formatted = str(round(gw['latency'] * 1000, 2)) + " ms "
-            out += f"latency={latency_formatted:<11}"
+            rtt_formatted = f"{gw['rtt']} ms "
+            out += f"rtt={rtt_formatted:<11}"
         for transport in gw['capabilities']['transport']:
             if transport['type'] == "openvpn":
                 protocols = ",".join(transport['protocols'])

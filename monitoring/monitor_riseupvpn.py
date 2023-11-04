@@ -1,6 +1,5 @@
 import netifaces
-from ping3 import ping
-from ping3.errors import PingError
+from icmplib import ping, ICMPLibError
 
 """
     checks:
@@ -9,7 +8,8 @@ from ping3.errors import PingError
     - can I ping the gateway of tun0?
 
     requires:
-        sudo pacman -S python-netifaces python-ping3
+        sudo pacman -S python-netifaces python-icmplib
+        sudo apt-get install python3-netifaces python3-icmplib
 """
 
 
@@ -17,34 +17,35 @@ class Py3status:
     VPN_INTERFACE = "tun0"
 
     def monitor_host(self):
-        state_fail = {'full_text': "VPN: fail",
-                      'color': self.py3.COLOR_BAD,
-                      'cached_until': self.py3.time_in(seconds=30)
+        state_fail = {
+            'full_text': "VPN: fail",
+            'color': self.py3.COLOR_BAD,
+            'cached_until': self.py3.time_in(seconds=10)
         }
-        state_succeed = {'full_text': "VPN: OK",
-                         'color': self.py3.COLOR_GOOD,
-                         'cached_until': self.py3.time_in(seconds=1*60)
+        state_succeed = {
+            'full_text': "VPN: OK",
+            'color': self.py3.COLOR_GOOD,
+            'cached_until': self.py3.time_in(seconds=2*60)
         }
 
         interfaces = netifaces.interfaces()
         if self.VPN_INTERFACE not in interfaces:
-            self.py3.log(f"VPN interface not found ({interfaces})")
+            self.py3.log(f"VPN interface does not exist ({interfaces})")
             return state_fail
 
         gw_ip, interface = netifaces.gateways()['default'][netifaces.AF_INET]
         #self.py3.log(gw_ip, interface)
         if interface != self.VPN_INTERFACE:
-            self.py3.log(f"Interface of default gateway is not the VPN interface ({interface})")
+            self.py3.log(f"Default gateway interface is not the VPN interface ({interface})")
             return state_fail
 
         try:
-            # ping returns: The delay in seconds/milliseconds, False on error and None on timeout.
-            state = ping(gw_ip, timeout=2)
-            if not state:
-                self.py3.log(f"Ping failed: {state}")
-                return state_fail
+            resp = ping(gw_ip, timeout=2,
+                        count=1, privileged=False)
+            #self.py3.log(resp)
             return state_succeed
-        except PingError:
+        except ICMPLibError as e:
+            self.py3.log(f"Ping failed: {e}")
             return state_fail
 
 
