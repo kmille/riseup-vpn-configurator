@@ -386,7 +386,7 @@ def fix_file_permissions(file: Path) -> None:
         uid = pwd.getpwnam(vpn_user).pw_uid
         gid = grp.getgrnam(vpn_group).gr_gid
     except KeyError as e:
-        logging.error(f"Could not find user/group: {e}")
+        logging.error(f"Could not find user/group: {e}. You can adjust user/group in {config_file}")
         sys.exit(1)
     os.chown(file, uid, gid)
     file.chmod(0o600)
@@ -405,7 +405,7 @@ def check_working_directory() -> None:
             uid = pwd.getpwnam(vpn_user).pw_uid
             gid = grp.getgrnam(vpn_group).gr_gid
         except KeyError as e:
-            logging.error(f"Could not find user/group: {e}")
+            logging.error(f"Could not find user/group: {e}. You can adjust user/group in {config_file}")
             sys.exit(1)
         working_dir.mkdir(0o700)
         os.chown(working_dir, uid, gid)
