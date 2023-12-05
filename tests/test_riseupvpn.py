@@ -18,6 +18,9 @@ class TestRiseupVPN:
         return True
 
     def setup_class(self):
+        if os.getuid() != 0:
+            pytest.fail("Tests need to be run as root (for example to run chmod)")
+
         self.temp_dir = tempfile.TemporaryDirectory()
         working_dir = Path(self.temp_dir.name)
 
