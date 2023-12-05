@@ -5,7 +5,10 @@ import tempfile
 import logging
 
 import riseup_vpn_configurator
-riseup_vpn_configurator.VERIFY_SSL_CERTIFICATE = False
+#riseup_vpn_configurator.VERIFY_SSL_CERTIFICATE = False
+
+VPN_USER = os.environ["VPN_USER"] if "VPN_USER" in os.environ else "openvpn"
+VPN_GROUP = os.environ["VPN_GROUP"] if "VPN_GROUP" in os.environ else "openvpn"
 
 
 class TestRiseupVPN:
@@ -13,8 +16,8 @@ class TestRiseupVPN:
     def check_permissions_of_file(self, file: Path) -> bool:
         perm = os.stat(str(file))
         assert perm.st_mode == 0o100600
-        assert file.owner() == riseup_vpn_configurator.VPN_USER
-        assert file.group() == riseup_vpn_configurator.VPN_USER
+        assert file.owner() == VPN_USER
+        assert file.group() == VPN_GROUP
         return True
 
     def setup_class(self):
@@ -30,8 +33,11 @@ class TestRiseupVPN:
         riseup_vpn_configurator.ca_cert_file = working_dir / Path("vpn-ca.pem")
         riseup_vpn_configurator.cert_file = working_dir / Path("cert.pem")
         riseup_vpn_configurator.key_file = working_dir / Path("key.pem")
-        riseup_vpn_configurator.config_file = working_dir / Path("riseup-vpn.yaml")
         riseup_vpn_configurator.ovpn_file = working_dir / Path("riseup.conf")
+        riseup_vpn_configurator.config_file = working_dir / Path("riseup-vpn.yaml")
+        # copy default config
+        default_config = (Path(__file__).parent / "../riseup_vpn_configurator/riseup-vpn.yaml").read_text()
+        riseup_vpn_configurator.config_file.write_text(default_config)
 
     def teardown_class(self):
         self.temp_dir.cleanup()
@@ -142,7 +148,7 @@ class TestRiseupVPN:
             assert se.value.code == 0
         captured = capsys.readouterr()
         config = yaml.safe_load(captured.out)
-        assert list(config.keys()) == ['server', 'protocol', 'port', 'excluded_routes']
+        assert list(config.keys()) == ['server', 'protocol', 'port', 'excluded_routes', 'user', 'group']
 
     def test_generate_vpn_configuration(self, capsys, caplog):
         import yaml

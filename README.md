@@ -98,3 +98,6 @@ If you use [py3status](https://github.com/ultrabug/py3status) as i3bar implement
 # Known issues
 
 RiseupVPN does not support IPv6. It's routed over the tunnel but then gets blocked. Also, the VPN hangs after suspend ([see Arch Wiki](https://wiki.archlinux.org/title/OpenVPN#Client_daemon_not_reconnecting_after_suspend)). To solve this issue, the AUR package uses [openvpn-reconnect](https://aur.archlinux.org/packages/openvpn-reconnect) as a dependency.
+
+# Changelog
+v0.1.1: You can specify user/group in the config file. For the tests, use VPN_USER/VPN_GROUP env variables to overwrite the default (openvpn). Fixes [#5](https://github.com/kmille/riseup-vpn-configurator/issues/5)

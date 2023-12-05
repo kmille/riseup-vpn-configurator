@@ -40,7 +40,6 @@ PROVIDER_API_URL = "https://riseup.net/provider.json"
 VPN_CA_CERT_URL = "https://black.riseup.net/ca.crt"
 VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 
-VPN_USER = "openvpn"
 VERIFY_SSL_CERTIFICATE = True
 
 
@@ -193,6 +192,22 @@ def get_excluded_routes() -> str:
                 logging.error(f"Error parsing {host} in excluded_routes (not a ipaddress/network or hostname): {e}")
                 sys.exit(1)
     return out.strip()
+
+
+def get_openvpn_user_group() -> tuple[str, str]:
+    vpn_user = vpn_group = "openvpn"
+
+    with open(config_file) as f:
+        try:
+            y = yaml.safe_load(f)
+        except yaml.scanner.ScannerError as e:
+            logging.error(f"Could not parse yaml file: {e}")
+            sys.exit(1)
+    if "user" in y:
+        vpn_user = y["user"]
+    if "group" in y:
+        vpn_group = y["group"]
+    return vpn_user, vpn_group
 
 
 def check_config_file() -> None:
@@ -366,9 +381,10 @@ def check_root_permissions() -> None:
 
 
 def fix_file_permissions(file: Path) -> None:
+    vpn_user, vpn_group = get_openvpn_user_group()
     try:
-        uid = pwd.getpwnam(VPN_USER).pw_uid
-        gid = grp.getgrnam(VPN_USER).gr_gid
+        uid = pwd.getpwnam(vpn_user).pw_uid
+        gid = grp.getgrnam(vpn_group).gr_gid
     except KeyError as e:
         logging.error(f"Could not find user/group: {e}")
         sys.exit(1)
@@ -384,9 +400,10 @@ def print_default_config(return_code: int) -> NoReturn:
 
 def check_working_directory() -> None:
     if not working_dir.exists():
+        vpn_user, vpn_group = get_openvpn_user_group()
         try:
-            uid = pwd.getpwnam(VPN_USER).pw_uid
-            gid = grp.getgrnam(VPN_USER).gr_gid
+            uid = pwd.getpwnam(vpn_user).pw_uid
+            gid = grp.getgrnam(vpn_group).gr_gid
         except KeyError as e:
             logging.error(f"Could not find user/group: {e}")
             sys.exit(1)
