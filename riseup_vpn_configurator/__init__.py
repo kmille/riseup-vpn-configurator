@@ -82,7 +82,7 @@ def update_gateways() -> None:
     cache_api_ca_cert()
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
     try:
-        #resp = requests.get(GATEWAYS_API_URL, verify=api_ca_cert_file.as_posix())
+        # resp = requests.get(GATEWAYS_API_URL, verify=api_ca_cert_file.as_posix())
         resp = requests.get(GATEWAYS_API_URL)
         resp.raise_for_status()
         gateway_json.write_text(resp.text)
@@ -119,7 +119,7 @@ def update_vpn_client_credentials() -> None:
     """
     logging.info("Updating client certificate/key")
     try:
-        #resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=api_ca_cert_file.as_posix())
+        # resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=api_ca_cert_file.as_posix())
         resp = requests.get(VPN_CLIENT_CREDENTIALS_URL)
         resp.raise_for_status()
         SEPERATOR = "-----BEGIN CERTIFICATE-----"
