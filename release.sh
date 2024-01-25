@@ -16,7 +16,7 @@ poetry run mypy riseup_vpn_configurator
 sudo poetry run pytest -v -s tests
 
 # update version
-poetry version patch
+poetry version minor
 
 # update git version
 git add pyproject.toml
