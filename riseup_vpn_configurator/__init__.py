@@ -35,10 +35,10 @@ key_file = working_dir / Path("key.pem")
 config_file = Path("/etc/riseup-vpn.yaml")
 ovpn_file = Path("/etc/openvpn/client/riseup.conf")
 
-GATEWAYS_API_URL = "https://api.black.riseup.net/1/configs/eip-service.json"
+GATEWAYS_API_URL = "https://api.black.riseup.net/3/config/eip-service.json"
 PROVIDER_API_URL = "https://riseup.net/provider.json"
 VPN_CA_CERT_URL = "https://black.riseup.net/ca.crt"
-VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
+VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/3/cert"
 
 VERIFY_SSL_CERTIFICATE = True
 
