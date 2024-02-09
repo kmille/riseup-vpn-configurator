@@ -11,7 +11,7 @@ poetry install
 
 # run tests
 # run by git hooks
-poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+poetry run flake8 --ignore=E501 --show-source --statistics 
 poetry run mypy riseup_vpn_configurator
 sudo poetry run pytest -v -s tests
 

@@ -85,10 +85,10 @@ class TestRiseupVPN:
         assert ca_cert_file.strip().endswith("-----END CERTIFICATE-----")
 
     def test_update_vpn_client_credentials(self, caplog):
-        from riseup_vpn_configurator import update_vpn_client_credentials #, cache_api_ca_cert
+        from riseup_vpn_configurator import update_vpn_client_credentials  # , cache_api_ca_cert
         caplog.set_level(logging.INFO)
 
-        #cache_api_ca_cert()
+        # cache_api_ca_cert()
         update_vpn_client_credentials()
 
         # BEGIN CHECK CERT

@@ -24,7 +24,7 @@ jobs:
         sudo poetry install
     - name: Lint with flake8
       run: |
-        sudo poetry run flake8 --ignore=E501 --show-source --statistics riseup_vpn_configurator
+        sudo poetry run flake8 --ignore=E501 --show-source --statistics
     - name: Type check with mypy
       run: |
         sudo poetry run mypy riseup_vpn_configurator

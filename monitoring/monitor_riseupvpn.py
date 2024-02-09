@@ -25,7 +25,7 @@ class Py3status:
         state_succeed = {
             'full_text': "VPN: OK",
             'color': self.py3.COLOR_GOOD,
-            'cached_until': self.py3.time_in(seconds=2*60)
+            'cached_until': self.py3.time_in(seconds=2 * 60)
         }
 
         interfaces = netifaces.interfaces()
@@ -34,15 +34,15 @@ class Py3status:
             return state_fail
 
         gw_ip, interface = netifaces.gateways()['default'][netifaces.AF_INET]
-        #self.py3.log(gw_ip, interface)
+        # self.py3.log(gw_ip, interface)
         if interface != self.VPN_INTERFACE:
             self.py3.log(f"Default gateway interface is not the VPN interface ({interface})")
             return state_fail
 
         try:
-            resp = ping(gw_ip, timeout=2,
+            resp = ping(gw_ip, timeout=2,  # noqa: F841
                         count=1, privileged=False)
-            #self.py3.log(resp)
+            # self.py3.log(resp)
             return state_succeed
         except ICMPLibError as e:
             self.py3.log(f"Ping failed: {e}")

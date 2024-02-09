@@ -55,22 +55,22 @@ def get_rtt(ip: str) -> float:
         return 9000.0
 
 
-#def cache_api_ca_cert() -> None:
-#    logging.debug("Updating riseup.net API API CA certificate")
-#    logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
-#    try:
-#        resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
-#        resp.raise_for_status()
-#        j = resp.json()
-#        logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
-#        resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
-#        resp.raise_for_status()
-#        api_ca_cert_file.write_text(resp.text)
-#    except (requests.RequestException, KeyError) as e:
-#        logging.error(e)
-#        sys.exit(1)
-#    fix_file_permissions(api_ca_cert_file)
-#    logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
+# def cache_api_ca_cert() -> None:
+#     logging.debug("Updating riseup.net API API CA certificate")
+#     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
+#     try:
+#         resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
+#         resp.raise_for_status()
+#         j = resp.json()
+#         logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
+#         resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
+#         resp.raise_for_status()
+#         api_ca_cert_file.write_text(resp.text)
+#     except (requests.RequestException, KeyError) as e:
+#         logging.error(e)
+#         sys.exit(1)
+#     fix_file_permissions(api_ca_cert_file)
+#     logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
 
 
 def update_gateways() -> None:
@@ -496,8 +496,8 @@ def main() -> None:
     if args.no_check_certificate:
         # deprecated
         pass
-        #global VERIFY_SSL_CERTIFICATE
-        #VERIFY_SSL_CERTIFICATE = False
+        # global VERIFY_SSL_CERTIFICATE
+        # VERIFY_SSL_CERTIFICATE = False
 
     elif args.version:
         show_version()
