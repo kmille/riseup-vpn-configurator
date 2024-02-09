@@ -5,7 +5,6 @@ import tempfile
 import logging
 
 import riseup_vpn_configurator
-#riseup_vpn_configurator.VERIFY_SSL_CERTIFICATE = False
 
 VPN_USER = os.environ["VPN_USER"] if "VPN_USER" in os.environ else "openvpn"
 VPN_GROUP = os.environ["VPN_GROUP"] if "VPN_GROUP" in os.environ else "openvpn"
@@ -42,19 +41,19 @@ class TestRiseupVPN:
     def teardown_class(self):
         self.temp_dir.cleanup()
 
-    def test_cache_api_ca_cert(self, caplog):
-        from riseup_vpn_configurator import cache_api_ca_cert
-        caplog.set_level(logging.INFO)
-
-        cache_api_ca_cert()
-        assert riseup_vpn_configurator.api_ca_cert_file.exists()
-        assert "Sucessfully" in caplog.text
-        assert self.check_permissions_of_file(riseup_vpn_configurator.api_ca_cert_file)
-
-        api_ca_cert = riseup_vpn_configurator.api_ca_cert_file.read_text()
-        assert api_ca_cert.startswith("-----BEGIN CERTIFICATE-----")
-        assert api_ca_cert.strip().endswith("-----END CERTIFICATE-----")
-
+#    def test_cache_api_ca_cert(self, caplog):
+#        from riseup_vpn_configurator import cache_api_ca_cert
+#        caplog.set_level(logging.INFO)
+#
+#        cache_api_ca_cert()
+#        assert riseup_vpn_configurator.api_ca_cert_file.exists()
+#        assert "Sucessfully" in caplog.text
+#        assert self.check_permissions_of_file(riseup_vpn_configurator.api_ca_cert_file)
+#
+#        api_ca_cert = riseup_vpn_configurator.api_ca_cert_file.read_text()
+#        assert api_ca_cert.startswith("-----BEGIN CERTIFICATE-----")
+#        assert api_ca_cert.strip().endswith("-----END CERTIFICATE-----")
+#
     def test_update_gateways(self, caplog):
         import json
         from riseup_vpn_configurator import update_gateways
@@ -86,10 +85,10 @@ class TestRiseupVPN:
         assert ca_cert_file.strip().endswith("-----END CERTIFICATE-----")
 
     def test_update_vpn_client_credentials(self, caplog):
-        from riseup_vpn_configurator import update_vpn_client_credentials, cache_api_ca_cert
+        from riseup_vpn_configurator import update_vpn_client_credentials #, cache_api_ca_cert
         caplog.set_level(logging.INFO)
 
-        cache_api_ca_cert()
+        #cache_api_ca_cert()
         update_vpn_client_credentials()
 
         # BEGIN CHECK CERT

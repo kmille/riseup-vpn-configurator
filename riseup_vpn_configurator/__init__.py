@@ -25,7 +25,6 @@ logging.basicConfig(format=FORMAT, level=logging.INFO)
 # logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 working_dir = Path("/opt/riseup-vpn")
-api_ca_cert_file = working_dir / Path("api-ca.pem")
 gateway_json = working_dir / Path("gateways.json")
 
 ca_cert_file = working_dir / Path("vpn-ca.pem")
@@ -56,22 +55,22 @@ def get_rtt(ip: str) -> float:
         return 9000.0
 
 
-def cache_api_ca_cert() -> None:
-    logging.debug("Updating riseup.net API API CA certificate")
-    logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
-    try:
-        resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
-        resp.raise_for_status()
-        j = resp.json()
-        logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
-        resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
-        resp.raise_for_status()
-        api_ca_cert_file.write_text(resp.text)
-    except (requests.RequestException, KeyError) as e:
-        logging.error(e)
-        sys.exit(1)
-    fix_file_permissions(api_ca_cert_file)
-    logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
+#def cache_api_ca_cert() -> None:
+#    logging.debug("Updating riseup.net API API CA certificate")
+#    logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
+#    try:
+#        resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
+#        resp.raise_for_status()
+#        j = resp.json()
+#        logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
+#        resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
+#        resp.raise_for_status()
+#        api_ca_cert_file.write_text(resp.text)
+#    except (requests.RequestException, KeyError) as e:
+#        logging.error(e)
+#        sys.exit(1)
+#    fix_file_permissions(api_ca_cert_file)
+#    logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
 
 
 def update_gateways() -> None:
@@ -79,10 +78,8 @@ def update_gateways() -> None:
     curl https://api.black.riseup.net/1/configs/eip-service.json
     """
     logging.info("Updating VPN gateway list")
-    cache_api_ca_cert()
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
     try:
-        # resp = requests.get(GATEWAYS_API_URL, verify=api_ca_cert_file.as_posix())
         resp = requests.get(GATEWAYS_API_URL)
         resp.raise_for_status()
         gateway_json.write_text(resp.text)
@@ -99,7 +96,7 @@ def update_vpn_ca_certificate() -> None:
     """
     logging.info("Updating VPN CA certificate")
     try:
-        resp = requests.get(VPN_CA_CERT_URL, verify=VERIFY_SSL_CERTIFICATE)
+        resp = requests.get(VPN_CA_CERT_URL)
         resp.raise_for_status()
         if "-----BEGIN CERTIFICATE-----" not in resp.text or \
            "-----END CERTIFICATE-----" not in resp.text:
@@ -119,7 +116,6 @@ def update_vpn_client_credentials() -> None:
     """
     logging.info("Updating client certificate/key")
     try:
-        # resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=api_ca_cert_file.as_posix())
         resp = requests.get(VPN_CLIENT_CREDENTIALS_URL)
         resp.raise_for_status()
         SEPERATOR = "-----BEGIN CERTIFICATE-----"
@@ -498,8 +494,10 @@ def main() -> None:
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     if args.no_check_certificate:
-        global VERIFY_SSL_CERTIFICATE
-        VERIFY_SSL_CERTIFICATE = False
+        # deprecated
+        pass
+        #global VERIFY_SSL_CERTIFICATE
+        #VERIFY_SSL_CERTIFICATE = False
 
     elif args.version:
         show_version()
