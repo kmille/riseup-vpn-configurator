@@ -50,7 +50,7 @@ options:
 ```
 
 Default config file `/etc/riseup-vpn.yaml`
-```yamy
+```yaml
 ---
 # /etc/riseup-vpn.yaml
 
@@ -87,8 +87,7 @@ root@linbox:riseup-vpn-configurator poetry run mypy riseup_vpn_configurator/
 ```
 
 # How it works
-
-The code for the RiseupVPN Linux client can be found [here](https://0xacab.org/leap/bitmask-vpn). It uses OpenVPN. Everyone uses the same client certificate/key to authenticate. The client certificate is only valid for 90 days. The VPN gateway list and client certificate can be fetched by a public API.
+The code for the RiseupVPN Linux client can be found [here](https://0xacab.org/leap/bitmask-vpn). It uses OpenVPN. An API gives you valid OpenVPN cient credentials (certificate + key) for authentication. The client certificate is only valid for 90 days, so you have to run `--update` once in a while. The VPN gateway list and client certificate can be fetched by a public API.
 
 # Allow for non-root user
 ```bash
@@ -100,8 +99,7 @@ kmille ALL = NOPASSWD: /usr/bin/riseup-vpn-configurator
 If you use [py3status](https://github.com/ultrabug/py3status) as i3bar implementation, you can use [monitor_riseupvpn.py](/monitoring/monitor_riseupvpn.py) for monitoring.
 
 # Known issues
-
-RiseupVPN does not support IPv6. It's routed over the tunnel but then gets blocked. Also, the VPN hangs after suspend ([see Arch Wiki](https://wiki.archlinux.org/title/OpenVPN#Client_daemon_not_reconnecting_after_suspend)). To solve this issue, the AUR package uses [openvpn-reconnect](https://aur.archlinux.org/packages/openvpn-reconnect) as a dependency.
+RiseupVPN does not support IPv6. It's routed over the tunnel but then gets blocked. Also, the VPN hangs after suspend ([see Arch Wiki](https://wiki.archlinux.org/title/OpenVPN#Client_daemon_not_reconnecting_after_suspend)). To solve this issue, the AUR package uses [openvpn-reconnect](https://aur.archlinux.org/packages/openvpn-reconnect) as a dependency. The official Linux clients add firewall rules. This client does not touch your firewall.
 
 # Changelog
 v1.0.4: You can specify user/group in the config file. For the tests, use VPN_USER/VPN_GROUP env variables to overwrite the default (openvpn). Fixes [#5](https://github.com/kmille/riseup-vpn-configurator/issues/5)
