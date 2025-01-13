@@ -259,6 +259,7 @@ def get_server_info() -> Optional[dict]:
                 'proto': config['protocol'],
                 'port': config['port'],
                 'location': gw['location'],
+                'extra_config': config.get('extra_config', "")
             }
     logging.error(f"Gateway '{config['server']}' not found in gateway list. Please check with --list")
     sys.exit(1)
@@ -303,7 +304,8 @@ remote-cert-eku "TLS Web Server Authentication"
 
 ca {{ ca_cert_file }}
 cert {{ cert_file }}
-key {{ key_file }}"""
+key {{ key_file }}
+{{ server_info['extra_config'] }}"""
 
     server_info = get_server_info()
     excluded_routes = get_excluded_routes()

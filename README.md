@@ -69,6 +69,11 @@ excluded_routes:
 # os user/group
 user: openvpn
 group: openvpn
+
+# configuration verbatim to append to openvpn configuraion
+extra_config: |
+  # disable logs
+  verb: 0
 ```
 # How to use it
 [![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
