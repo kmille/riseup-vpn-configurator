@@ -16,3 +16,7 @@ excluded_routes:
 # os user/group
 user: openvpn
 group: openvpn
+
+# add custom config
+extra_config: |
+  # emtpy extra_config

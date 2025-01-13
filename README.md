@@ -69,6 +69,10 @@ excluded_routes:
 # os user/group
 user: openvpn
 group: openvpn
+
+# add custom config
+extra_config: |
+  # emtpy extra_config
 ```
 # How to use it
 [![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
