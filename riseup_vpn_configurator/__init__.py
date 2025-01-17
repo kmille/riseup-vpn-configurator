@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-import sys
-import os
-import logging
 import argparse
-import json
-import yaml
-import subprocess
-import pwd
 import grp
-from jinja2 import Template
-from pathlib import Path
-import requests
-from ipaddress import ip_network
-from pyasn1_modules import pem, rfc2459
-from pyasn1.codec.der import decoder
-import psutil
-from icmplib import ping, ICMPLibError
+import json
+import logging
+import os
+import pwd
 import shutil
 import socket
-from typing import Optional, NoReturn
+import subprocess
+import sys
+from ipaddress import ip_network
+from pathlib import Path
+from typing import NoReturn, Optional
+
+import psutil
+import requests
+import yaml
+from icmplib import ICMPLibError, ping
+from jinja2 import Template
+from pyasn1.codec.der import decoder
+from pyasn1_modules import pem, rfc2459
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
