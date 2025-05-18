@@ -78,7 +78,7 @@ extra_config: |
 [![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
 # Installation (as a dev)
 
-We need to run the tool with root permissions (for example to write to /etc). Running the tests also need root privileges (because we use chown). Therefore, I recommend running the dev environment also as root user.
+We need to run the tool with root permissions (for example to write to /etc). Running the tests also need root privileges (because we use chown). Therefore, I recommend running the dev environment also as root user (UPDATE: you can also use `sudo poetry install` and `sudo poetry run riseup-vpn-configurator`).
 
 ```bash
 root@linbox:tmp git clone https://github.com/kmille/riseup-vpn-configurator.git
