@@ -54,8 +54,16 @@ Default config file `/etc/riseup-vpn.yaml`
 ---
 # /etc/riseup-vpn.yaml
 
+# if given, use it as gateway
 server: vpn07-par.riseup.net
+
+# if `server` is not set, randomly pick any server from `location`
+# location: Seattle
+
+# openvpn protocol to use. If not set, randomly pick any protocol supported by server
 protocol: udp
+
+# openvpn port to use. If not set, randomly pick any port supported by server
 port: 53
 
 # excluded_routes: list servcies that should not be routed over VPN
@@ -74,7 +82,12 @@ group: openvpn
 extra_config: |
   # emtpy extra_config
 ```
+
+`server`, `protocol` and `port` are optional. If not given, `--generate-config` will randomly pick missing parameters.
+
+
 # How to use it
+
 [![asciicast](https://asciinema.org/a/559611.svg)](https://asciinema.org/a/559611)
 # Installation (as a dev)
 

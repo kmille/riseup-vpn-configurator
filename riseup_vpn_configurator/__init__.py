@@ -5,10 +5,12 @@ import json
 import logging
 import os
 import pwd
+import random
 import shutil
 import socket
 import subprocess
 import sys
+from dataclasses import dataclass
 from ipaddress import ip_network
 from pathlib import Path
 from typing import NoReturn, Optional
@@ -222,15 +224,17 @@ def check_config_file() -> None:
         logging.error(f"Could not parse config file {config_file}")
         print_default_config(1)
 
-    for c in ("server", "protocol", "port", "excluded_routes"):
+    # check mandatory parameters
+    for c in ("excluded_routes",):
         if c not in y.keys():
             logging.error(f"Error checking configuration file ({config_file}): '{c}' not specified")
             sys.exit(1)
 
-    if y["protocol"] not in ("tcp", "udp"):
+    if "protocol" in y and y["protocol"] not in ("tcp", "udp"):
         logging.error(f"Error checking configuration file ({config_file}): 'protocol' must be one of the values tcp|udp (specified was '{y['protocol']}')")
         sys.exit(1)
-    if not str(y["port"]).isnumeric():
+
+    if "port" in y and not str(y["port"]).isnumeric():
         logging.error(f"Error checking configuration file ({config_file}): 'port' must be numeric (specified was '{y['port']}')")
         sys.exit(1)
 
@@ -246,24 +250,97 @@ def check_config_file() -> None:
     logging.info("Configuration file: OK")
 
 
-def get_server_info() -> Optional[dict]:
+@dataclass
+class Gateway:
+    host: Optional[str]
+    protocols: list[str]
+    ports: list[int]
+    ip_address: Optional[str]
+    location: Optional[str]
+
+    @classmethod
+    def from_json(cls, gw_item: dict):
+        for transport in gw_item.get('capabilities', {}).get('transport', {}):
+            if transport.get('type') == 'openvpn':
+                protocols = transport.get('protocols', [])
+                ports = [int(p) for p in transport.get('ports', [])]
+                break
+        return cls(host=gw_item.get('host'),
+                   protocols=protocols,
+                   ports=ports,
+                   ip_address=gw_item.get('ip_address'),
+                   location=gw_item.get('location'))
+
+
+def filter_gateways(gateways: dict, filter: Gateway) -> list:
+    """Find gateways that match the given filter."""
+    candidates = []
+    for gw_item in gateways:
+        gw = Gateway.from_json(gw_item)
+
+        if filter.host and gw.host == filter.host:
+            # force given gateway
+            return [gw]
+
+        if filter.protocols:
+            if not [proto for proto in filter.protocols if proto in gw.protocols]:
+                # gateway does not support any wanted protocols
+                continue
+            else:
+                # force given protocol
+                gw.protocols = filter.protocols
+
+        if filter.ports:
+            if not [port for port in filter.ports if port in gw.ports]:
+                # gateway does not support any wanted ports
+                continue
+            else:
+                # force given port
+                gw.ports = filter.ports
+
+        if filter.location and gw.location != filter.location:
+            # gateway is not in the wanted location
+            continue
+
+        candidates.append(gw)
+
+    return candidates
+
+
+def get_server_info() -> dict:
     with open(config_file) as f:
         config = yaml.safe_load(f)
     with open(gateway_json) as f:
         j = json.load(f)
-    gateways = j['gateways']
-    for gw in gateways:
-        if gw['host'] == config['server']:
-            return {
-                'hostname': gw['host'],
-                'ip_address': gw['ip_address'],
-                'proto': config['protocol'],
-                'port': config['port'],
-                'location': gw['location'],
-                'extra_config': config.get('extra_config', "")
-            }
-    logging.error(f"Gateway '{config['server']}' not found in gateway list. Please check with --list")
-    sys.exit(1)
+
+    protocol = config.get('protocol')
+    port = config.get('port')
+    filter = Gateway(host=config.get('server'),
+                     protocols=[protocol] if protocol else None,
+                     ports=[int(port)] if port else None,
+                     location=config.get('location'),
+                     ip_address=None)
+
+    gateways = filter_gateways(j['gateways'], filter)
+    if not gateways:
+        logging.error("Can't find any gateway matching critera. Please check with --list.")
+        sys.exit(1)
+
+    # pick a gateway that match filters
+    gw = random.choice(gateways)
+
+    # pick one protocol and port
+    protocol = random.choice(gw.protocols)
+    port = random.choice(gw.ports)
+
+    return {
+        'hostname': gw.host,
+        'ip_address': gw.ip_address,
+        'proto': protocol,
+        'port': port,
+        'location': gw.location,
+        'extra_config': config.get('extra_config', "")
+    }
 
 
 def generate_configuration() -> None:
